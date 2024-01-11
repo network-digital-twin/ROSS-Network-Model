@@ -78,7 +78,7 @@ extern tw_lptype model_lps[];
 
 tw_stime lookahead;
 unsigned int nlp_per_pe;
-unsigned int custom_LPs_per_pe;
+unsigned int num_LPs_per_pe;
 
 int total_mailboxes;
 int total_post_offices;

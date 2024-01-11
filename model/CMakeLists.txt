@@ -15,10 +15,11 @@
 # All source files for the model
 SET(mail_srcs
 	mail_main.c
-	mail_driver.c
+		mail_post_office.c
 	mail_map.c
 	mail.h
 	model_config.h
+		mail_mailbox.c
 )
 
 

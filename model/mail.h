@@ -19,11 +19,20 @@ Neil McGlohon
 
 //STRUCTS ------------------------------
 
+typedef enum {
+    KICKOFF,
+    ARRIVE,
+    SEND,
+} message_type;
+
 typedef struct
 {
      tw_lpid sender;
      tw_lpid final_dest;
      tw_lpid next_dest;
+     int packet_size;
+     int packet_type;
+     message_type type;
 } letter;
 
 
@@ -47,6 +56,9 @@ enum lpTypeVals
      MAILBOX = 0,
      POSTOFFICE = 1
 };
+
+
+
 
 extern tw_lpid lpTypeMapper(tw_lpid gid);
 extern tw_peid mail_map(tw_lpid gid);

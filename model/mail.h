@@ -10,6 +10,7 @@ Neil McGlohon
 #define _mail_h
 
 #include "ross.h"
+#include "qos/queue_fifo.h"
 
 #define MEAN_MAILBOX_WAIT .005
 #define MEAN_PO_PROCESS_WAIT .01
@@ -47,6 +48,7 @@ typedef struct
 {
      int num_letters_sent;
      int num_letters_recvd;
+     queue_t *qos_queue_list;
      //TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
 } post_office_state;
 

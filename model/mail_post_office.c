@@ -15,10 +15,16 @@ Neil McGlohon
 
 //Includes
 #include "mail.h"
+#include "qos/queue_fifo.h"
 #include <string.h>
+
+#define NUM_QOS_LEVEL 3
+#define QOS_QUEUE_CAPACITY 65536 // 64KB
 
 
 //-------------Post office stuff-------------
+
+void qos_enqueue(post_office_state *s, const letter *in_msg);
 
 void post_office_init (post_office_state *s, tw_lp *lp)
 {
@@ -26,6 +32,12 @@ void post_office_init (post_office_state *s, tw_lp *lp)
 
      // init state data
      s->num_letters_recvd = 0;
+     s->qos_queue_list = malloc(sizeof(queue_t) * NUM_QOS_LEVEL);
+     for(int i = 0; i < NUM_QOS_LEVEL; i++)
+     {
+         s->qos_queue_list[i] = *queue_init(QOS_QUEUE_CAPACITY);
+     }
+     // TODO: CHECK HERE IF THE MEMORY ALLOCATION IS CORRECT!
 }
 
 void post_office_prerun (post_office_state *s, tw_lp *lp)
@@ -42,11 +54,30 @@ void handle_arrive_event(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp 
     // modify the state here
     s->num_letters_recvd++;
 
+    //qos_enqueue(s, in_msg);
+
+
+    // Schedule a SEND event to myself
     tw_event *e = tw_event_new(self,ts,lp);
     letter *let = tw_event_data(e);
     memcpy(let, in_msg, sizeof(letter));
     let->type = SEND;
     tw_event_send(e);
+
+}
+
+void qos_enqueue(post_office_state *s, const letter *in_msg)
+{
+    int qos_level = in_msg->packet_type;
+    letter *let = malloc(sizeof(letter));
+    memcpy(let, in_msg, sizeof(letter));
+    queue_t *q = &s->qos_queue_list[qos_level];
+    int ret = queue_put(q, *let);
+    if(ret == -1)
+    {
+        printf("ERROR: QOS queue is full\n");
+        return;
+    }
 
 }
 
@@ -144,5 +175,10 @@ void post_office_RC_event_handler(post_office_state *s, tw_bf *bf, letter *in_ms
 void post_office_final(post_office_state *s, tw_lp *lp)
 {
      int self = lp->gid;
+//    for(int i = 0; i < NUM_QOS_LEVEL; i++)
+//    {
+//        queue_destroy(&s->qos_queue_list[i]);
+//    }
+//    free(s->qos_queue_list);
      printf("Post Office %d: S:%d R:%d messages\n", self,s->num_letters_sent, s->num_letters_recvd);
 }

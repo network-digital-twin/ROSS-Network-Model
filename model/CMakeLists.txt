@@ -20,6 +20,8 @@ SET(mail_srcs
 	mail.h
 	model_config.h
 		mail_mailbox.c
+		qos/queue_fifo.c
+		qos/queue_fifo.h
 )
 
 

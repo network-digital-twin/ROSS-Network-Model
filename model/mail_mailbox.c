@@ -78,6 +78,7 @@ void mailbox_event_handler(mailbox_state *s, tw_bf *bf, letter *in_msg, tw_lp *l
     let->final_dest = final_dest;
     let->next_dest = next_dest;
     let->type = ARRIVE;
+    let->packet_type = 0;
     tw_event_send(e);
     s->num_letters_sent++;
 }

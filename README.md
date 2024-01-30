@@ -1,8 +1,8 @@
-#Introduction
+# Introduction
 
 This is an example model for use with [ROSS](http://github.com/carothersc/ROSS), the parallel discrete event simulation system at Rensselaer Polytechnic Institute.
 
-This model simulates a simple postal network of mailboxes and post offices. Mailboxes send letters which are delivered to specific assigned post offices. The post offices process letters, determining if each letter that they recieve can be delivered to a local mailbox or if it must be routed to another post office.
+This model simulates a simple postal network of terminals and switches. Terminals send packets which are delivered to specific assigned switches. The switches process packets, determining if each message that they receive can be delivered to a local terminal or if it must be routed to another switch.
 
 This example model shows simple usage of scheduling new events, altering and reading message states, mapping of multiple LPs in a PDES system, and other intricacies of ROSS model development.
 
@@ -43,5 +43,5 @@ The executable will be placed in the `build/model` directory.
 To run the simulation:
 ```bash
 cd build/model
-mpirun -n 2 ./mail --sync=3
+mpirun -n 2 ./network --sync=3
 ```

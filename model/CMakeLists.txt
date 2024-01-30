@@ -13,13 +13,13 @@
 #SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/model_config.h PROPERTIES GENERATED TRUE)
 
 # All source files for the model
-SET(mail_srcs
-	mail_main.c
-		mail_post_office.c
-	mail_map.c
-	mail.h
+SET(network_srcs
+		network_main.c
+		network_switch.c
+		network_map.c
+		network.h
 	model_config.h
-		mail_mailbox.c
+		network_terminal.c
 )
 
 
@@ -27,14 +27,14 @@ SET(mail_srcs
 
 # Set the executable name here: model
 # You will be executing the ./model binary
-ADD_EXECUTABLE(mail ${mail_srcs})
+ADD_EXECUTABLE(network ${network_srcs})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(mail ${ROSS_LIBRARIES} ${MPI_C_LIBRARIES})
+TARGET_LINK_LIBRARIES(network ${ROSS_LIBRARIES} ${MPI_C_LIBRARIES})
 
 
 
-# Set the executable name here: mail
-# You will be executing the ./mail binary
-#ADD_EXECUTABLE(mail ${mail_srcs})
+# Set the executable name here: network
+# You will be executing the ./network binary
+#ADD_EXECUTABLE(network ${network_srcs})
 #
-#TARGET_LINK_LIBRARIES(mail ROSS m)
+#TARGET_LINK_LIBRARIES(network ROSS m)

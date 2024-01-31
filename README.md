@@ -25,7 +25,7 @@ Modify the path of `HINTS` in the following lines to point to the build-ross dir
 ```cmake
 FIND_PATH(WITH_ROSS_PREFIX 
         NAMES include/ross.h
-		HINTS "../build-ross"
+        HINTS "../build-ross"
 )
 ```
 

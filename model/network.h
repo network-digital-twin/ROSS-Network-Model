@@ -21,11 +21,12 @@ typedef enum {
 typedef struct
 {
     tw_lpid sender;
-    tw_lpid final_dest;
+    tw_lpid final_dest; // The GID of a terminal
     tw_lpid next_dest;
     int packet_size;
     int packet_type;  // ToS (type of service)
     message_type type;
+    int port_id;   // for SEND event, which output port to use
 } tw_message; // It should not contain any pointers, otherwise the operations with queue will be affected.
 
 
@@ -82,6 +83,7 @@ typedef struct {
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
 node_t *sp_update(sp_scheduler* scheduler);
 void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority);
+int sp_has_next(const sp_scheduler *scheduler);
 
 
 //METER -----------------------------

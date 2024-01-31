@@ -33,3 +33,18 @@ node_t *sp_update(sp_scheduler* scheduler) {
 void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority) {
     queue_take_reverse(&scheduler->queue_list[priority], msg);
 }
+
+/**
+ * Check if the scheduler has more packets to send
+ * @param scheduler
+ * @return 1 for true, 0 for false.
+ */
+int sp_has_next(const sp_scheduler *scheduler) {
+    for(int i = 0; i < scheduler->num_queues; i++) {
+        queue_t *q = &scheduler->queue_list[i];
+        if(q->num_packets > 0) {
+            return 1;
+        }
+    }
+    return 0;
+}

@@ -29,8 +29,8 @@ tw_lptype model_lps[] =
 
 
 //Define command line arguments default values
-int total_terminals= 1;
-int total_switches = 1;
+int total_terminals= 2;
+int total_switches = 2;
 
 //Command line opts
 const tw_optdef model_opts[] = {

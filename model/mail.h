@@ -115,7 +115,7 @@ typedef struct {
 void srTCM_init(srTCM *meter, const params_srTCM *params);
 int srTCM_update(srTCM *meter, const letter *msg, tw_stime current_time);
 void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
-void *srTCM_snapshot(const srTCM *meter, srTCM_state* state);
+void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
 
 //STATE STRUCTS -----------------------------

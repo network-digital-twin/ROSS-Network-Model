@@ -80,7 +80,7 @@ void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state) {
  * @param meter
  * @param state
  */
-void *srTCM_snapshot(const srTCM *meter, srTCM_state* state) {
+void srTCM_snapshot(const srTCM *meter, srTCM_state* state) {
     state->T_c = meter->T_c;
     state->T_e = meter->T_e;
     state->last_update_time = meter->last_update_time;

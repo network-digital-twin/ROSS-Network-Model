@@ -1,4 +1,4 @@
-#Introduction
+# Introduction
 
 This is an example model for use with [ROSS](http://github.com/carothersc/ROSS), the parallel discrete event simulation system at Rensselaer Polytechnic Institute.
 
@@ -23,8 +23,8 @@ make install
 Then modify cmake/FindROSS.cmake to point to the ROSS build directory. 
 Modify the path of `HINTS` in the following lines to point to the build-ross directory.
 ```cmake
-FIND_PATH(WITH_ROSS_PREFIX
-    NAMES include/ross.h
+FIND_PATH(WITH_ROSS_PREFIX 
+        NAMES include/ross.h
 		HINTS "../build-ross"
 )
 ```

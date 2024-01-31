@@ -13,15 +13,19 @@
 #SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/model_config.h PROPERTIES GENERATED TRUE)
 
 # All source files for the model
-SET(mail_srcs
-	mail_main.c
+
+SET(
+		mail_srcs
+		mail_main.c
 		mail_post_office.c
-	mail_map.c
-	mail.h
-	model_config.h
+		mail_map.c
+		mail.h
+		model_config.h
 		mail_mailbox.c
 		qos/queue_fifo.c
-		qos/queue_fifo.h
+		qos/meter.c
+		qos/shaper.c
+		qos/scheduler/strict_priority.c
 )
 
 

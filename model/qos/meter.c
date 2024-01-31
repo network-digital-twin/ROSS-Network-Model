@@ -2,7 +2,7 @@
 // Created by Nan on 2024/1/24.
 //
 
-#include "mail.h"
+#include "network.h"
 #include <stdlib.h>
 
 
@@ -14,7 +14,7 @@ void srTCM_init(srTCM *meter, const params_srTCM *params) {
     meter->params = *params;  // copy the value that the pointer points to
 }
 
-int srTCM_update(srTCM *meter, const letter *msg, tw_stime current_time) {
+int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
     const int CIR = meter->params.CIR;
     const int CBS = meter->params.CBS;
     const int EBS = meter->params.EBS;

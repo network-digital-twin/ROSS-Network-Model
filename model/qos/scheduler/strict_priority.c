@@ -2,7 +2,7 @@
 // Created by Nan on 2024/1/25.
 //
 
-#include "mail.h"
+#include "network.h"
 
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper) {
     scheduler->queue_list = queue_list;
@@ -30,6 +30,6 @@ node_t *sp_update(sp_scheduler* scheduler) {
  * @param msg the struct 'msg' internally must not contain any pointers
  * @param priority
  */
-void sp_update_reverse(sp_scheduler* scheduler, const letter *msg, int priority) {
+void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority) {
     queue_take_reverse(&scheduler->queue_list[priority], msg);
 }

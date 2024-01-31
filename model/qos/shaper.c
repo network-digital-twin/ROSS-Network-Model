@@ -2,7 +2,7 @@
 // Created by Nan on 2024/1/24.
 //
 
-#include "mail.h"
+#include "network.h"
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 
 void token_bucket_init(token_bucket *bucket, int capacity, double rate, double port_bandwidth) {
@@ -21,7 +21,7 @@ void token_bucket_init(token_bucket *bucket, int capacity, double rate, double p
  * @param current_time
  * @return
  */
-void token_bucket_consume(token_bucket *bucket, const letter *msg, tw_stime current_time) {
+void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time) {
     int num_new_tokens;
     int packet_size = msg->packet_size;
 

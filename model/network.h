@@ -1,13 +1,13 @@
-#ifndef _mail_h
-#define _mail_h
+#ifndef _network_h
+#define _network_h
 
 #include "ross.h"
 
-#define MEAN_MAILBOX_WAIT .005
-#define MEAN_PO_PROCESS_WAIT .01
-// #define MEAN_PO_PROCESS_WAIT 45.0
+#define MEAN_TERMINAL_WAIT .005
+#define MEAN_SWITCH_PROCESS_WAIT .01
+// #define MEAN_SWITCH_PROCESS_WAIT 45.0
 
-#define LET_PER_MAILBOX 1
+#define MSG_PER_TERMINAL 1
 
 
 //MESSAGE STRUCTS ------------------------------
@@ -26,14 +26,14 @@ typedef struct
     int packet_size;
     int packet_type;  // ToS (type of service)
     message_type type;
-} letter; // It should not contain any pointers, otherwise the operations with queue will be affected.
+} tw_message; // It should not contain any pointers, otherwise the operations with queue will be affected.
 
 
 //QUEUE -----------------------------
 
 
 typedef struct node_t {
-    letter data;
+    tw_message data;
     struct node_t *next;
     struct node_t *prev;
 } node_t;
@@ -48,10 +48,10 @@ typedef struct {
 
 void queue_init(queue_t *queue, int capacity_in_bytes);
 void queue_destroy(queue_t *queue);
-void queue_put(queue_t *queue, const letter *msg);
+void queue_put(queue_t *queue, const tw_message *msg);
 void queue_put_reverse(queue_t *queue);
 node_t *queue_take(queue_t *queue);
-void queue_take_reverse(queue_t *queue, const letter *msg);
+void queue_take_reverse(queue_t *queue, const tw_message *msg);
 
 
 //SHAPER -----------------------------
@@ -66,8 +66,8 @@ typedef struct token_bucket {
 } token_bucket;
 
 void token_bucket_init(token_bucket *bucket, int capacity, double rate, double port_bandwidth);
-void token_bucket_consume(token_bucket *bucket, const letter *msg, tw_stime current_time);
-int token_bucket_update_reverse(token_bucket *bucket, letter *msg);
+void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
+int token_bucket_update_reverse(token_bucket *bucket, tw_message *msg);
 
 
 //SCHEDULER -----------------------------
@@ -81,7 +81,7 @@ typedef struct {
 
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
 node_t *sp_update(sp_scheduler* scheduler);
-void sp_update_reverse(sp_scheduler* scheduler, const letter *msg, int priority);
+void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority);
 
 
 //METER -----------------------------
@@ -113,7 +113,7 @@ typedef struct {
 } srTCM_state; // used for snapshot only
 
 void srTCM_init(srTCM *meter, const params_srTCM *params);
-int srTCM_update(srTCM *meter, const letter *msg, tw_stime current_time);
+int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time);
 void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
 void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
@@ -121,13 +121,13 @@ void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 //STATE STRUCTS -----------------------------
 
 typedef struct {
-     int num_letters_sent;
-     int num_letters_recvd;
-} mailbox_state;
+     int num_packets_sent;
+     int num_packets_recvd;
+} terminal_state;
 
 typedef struct {
-     int num_letters_sent;
-     int num_letters_recvd;
+     int num_packets_sent;
+     int num_packets_recvd;
      int num_queues;
      queue_t *qos_queue_list;
      int num_meters;
@@ -140,39 +140,39 @@ typedef struct {
      int *out_port_flags;
      double *bandwidths;  // the bandwidth of each out port
      double *propagation_delays;  // the propagation delay of each out port's physical cable
-} post_office_state;
+} switch_state;
 
 
 //MAPPING -----------------------------
 enum lpTypeVals
 {
-     MAILBOX = 0,
-     POSTOFFICE = 1
+     TERMINAL = 0,
+     SWITCH = 1
 };
 
 extern tw_lpid lpTypeMapper(tw_lpid gid);
-extern tw_peid mail_map(tw_lpid gid);
-extern int get_mailbox_GID(int lpid);
-extern int get_post_office_GID(int lpid);
-extern int get_assigned_post_office_LID(int lpid);
-extern int get_assigned_post_office_GID(int lpid);
+extern tw_peid network_map(tw_lpid gid);
+extern int get_terminal_GID(int lpid);
+extern int get_switch_GID(int lpid);
+extern int get_assigned_switch_LID(int lpid);
+extern int get_assigned_switch_GID(int lpid);
 
 //DRIVER -----------------------------
 
-extern void mailbox_init(mailbox_state *s, tw_lp *lp);
-extern void mailbox_prerun(mailbox_state *s, tw_lp *lp);
-extern void mailbox_event_handler(mailbox_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp);
-extern void mailbox_RC_event_handler(mailbox_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp);
-extern void mailbox_final(mailbox_state *s, tw_lp *lp);
-extern void mailbox_commit(mailbox_state *s, tw_bf *bf, letter *m, tw_lp *lp);
+extern void terminal_init(terminal_state *s, tw_lp *lp);
+extern void terminal_prerun(terminal_state *s, tw_lp *lp);
+extern void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+extern void terminal_RC_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+extern void terminal_final(terminal_state *s, tw_lp *lp);
+extern void terminal_commit(terminal_state *s, tw_bf *bf, tw_message *m, tw_lp *lp);
 
 
-extern void post_office_init(post_office_state *s, tw_lp *lp);
-extern void post_office_prerun(post_office_state *s, tw_lp *lp);
-extern void post_office_event_handler(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp);
-extern void post_office_RC_event_handler(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp);
-extern void post_office_final(post_office_state *s, tw_lp *lp);
-extern void post_office_commit(post_office_state *s, tw_bf *bf, letter *m, tw_lp *lp);
+extern void switch_init(switch_state *s, tw_lp *lp);
+extern void switch_prerun(switch_state *s, tw_lp *lp);
+extern void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+extern void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+extern void switch_final(switch_state *s, tw_lp *lp);
+extern void switch_commit(switch_state *s, tw_bf *bf, tw_message *m, tw_lp *lp);
 
 //MAIN -----------------------------
 
@@ -182,8 +182,8 @@ tw_stime lookahead;
 unsigned int nlp_per_pe;
 unsigned int num_LPs_per_pe;
 
-int total_mailboxes;
-int total_post_offices;
+int total_terminals;
+int total_switches;
 
 
 #endif

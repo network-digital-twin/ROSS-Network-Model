@@ -1,11 +1,3 @@
-/*
-mail_driver.c
-Mail System Simulator
-7-15-2016
-Neil McGlohon
-*/
-
-
 //The C driver file for a ROSS model
 //This file includes:
 // - an initialization function for each LP type
@@ -14,7 +6,7 @@ Neil McGlohon
 // - a finalization function for each LP type
 
 //Includes
-#include "mail.h"
+#include "network.h"
 #include <string.h>
 #include <assert.h>
 
@@ -27,14 +19,14 @@ Neil McGlohon
 int num_out_ports = 1;
 
 
-//-------------Post office stuff-------------
+//-------------Switch stuff-------------
 
-void post_office_init (post_office_state *s, tw_lp *lp)
+void switch_init (switch_state *s, tw_lp *lp)
 {
     int self = lp->gid;
 
     // init state data
-    s->num_letters_recvd = 0;
+    s->num_packets_recvd = 0;
     s->num_queues = NUM_QOS_LEVEL * num_out_ports;
     s->num_meters = NUM_QOS_LEVEL * num_out_ports;
     s->num_schedulers = num_out_ports;
@@ -81,19 +73,19 @@ void post_office_init (post_office_state *s, tw_lp *lp)
 
 }
 
-void post_office_prerun (post_office_state *s, tw_lp *lp)
+void switch_prerun (switch_state *s, tw_lp *lp)
 {
      int self = lp->gid;
-     // printf("%d: I am a post office\n",self);
+     // printf("%d: I am a switch\n",self);
 }
 
-void handle_arrive_event(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp)
+void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     tw_lpid self = lp->gid;
     tw_stime ts  = 1;
 
     // modify the state here
-    s->num_letters_recvd++;
+    s->num_packets_recvd++;
 
     /* ROUTING */
     // TODO: add routing
@@ -143,9 +135,9 @@ void handle_arrive_event(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp 
         ts = injection_delay + propagation_delay;
 
         tw_event *e = tw_event_new(self,ts,lp);
-        letter *let = tw_event_data(e);
-        memcpy(let, &node->data, sizeof(letter)); /////////
-        let->type = ARRIVE;
+        tw_message *out_msg = tw_event_data(e);
+        memcpy(out_msg, &node->data, sizeof(tw_message)); /////////
+        out_msg->type = ARRIVE;
         tw_event_send(e);
 
         free(node);
@@ -156,57 +148,57 @@ void handle_arrive_event(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp 
 
         ts = tw_now(lp) - s->shaper_list[out_port].next_available_time;
         tw_event *e = tw_event_new(self,ts,lp);
-        letter *let = tw_event_data(e);
-        memcpy(let, in_msg, sizeof(letter));
-        let->type = SEND;
+        tw_message *out_msg = tw_event_data(e);
+        memcpy(out_msg, in_msg, sizeof(tw_message));
+        out_msg->type = SEND;
         tw_event_send(e);
     }
 
 }
 
 
-void handle_send_event(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp)
+void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     tw_lpid self = lp->gid;
     tw_lpid final_dest;
     tw_lpid next_dest;
 
-    //Determine: Are you the post office that is to deliver the message or do you need to route it to another one
-    int assigned_post_office_gid = get_assigned_post_office_GID(in_msg-> final_dest);
-    if(self == assigned_post_office_gid) //You are the post office to deliver the message
+    //Determine: Are you the switch that is to deliver the message or do you need to route it to another one
+    int assigned_switch_gid = get_assigned_switch_GID(in_msg->final_dest);
+    if(self == assigned_switch_gid) //You are the switch to deliver the message
     {
         final_dest = in_msg -> final_dest;
         next_dest = in_msg -> final_dest;
 
-        // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_PO_PROCESS_WAIT) + lookahead;
-        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_PO_PROCESS_WAIT) + 5;
+        // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_SWITCH_PROCESS_WAIT) + lookahead;
+        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_SWITCH_PROCESS_WAIT) + 5;
         tw_event *e = tw_event_new(next_dest,ts,lp);
-        letter *let = tw_event_data(e);
-        let->sender = self;
-        let->final_dest = final_dest;
-        let->next_dest = next_dest;
+        tw_message *out_msg = tw_event_data(e);
+        out_msg->sender = self;
+        out_msg->final_dest = final_dest;
+        out_msg->next_dest = next_dest;
         tw_event_send(e);
-        s->num_letters_sent++;
+        s->num_packets_sent++;
 
     }
-    else //You need to route it to another post office
+    else //You need to route it to another switch
     {
         final_dest = in_msg -> final_dest;
-        next_dest = assigned_post_office_gid;
+        next_dest = assigned_switch_gid;
 
-        // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_PO_PROCESS_WAIT) + lookahead;
-        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_PO_PROCESS_WAIT) + 5;
+        // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_SWITCH_PROCESS_WAIT) + lookahead;
+        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_SWITCH_PROCESS_WAIT) + 5;
         tw_event *e = tw_event_new(next_dest,ts,lp);
-        letter *let = tw_event_data(e);
-        let->sender = self;
-        let->final_dest = final_dest;
-        let->next_dest = next_dest;
+        tw_message *out_msg = tw_event_data(e);
+        out_msg->sender = self;
+        out_msg->final_dest = final_dest;
+        out_msg->next_dest = next_dest;
         tw_event_send(e);
-        s->num_letters_sent++;
+        s->num_packets_sent++;
     }
 }
 
-void post_office_event_handler(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp)
+void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
 
     *(int *) bf = (int) 0;  // initialise the bit field. https://github.com/ROSS-org/ROSS/wiki/Tips-&-Tricks
@@ -235,18 +227,18 @@ void post_office_event_handler(post_office_state *s, tw_bf *bf, letter *in_msg, 
 
 
 
-void post_office_RC_event_handler(post_office_state *s, tw_bf *bf, letter *in_msg, tw_lp *lp)
+void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     switch (in_msg->type) {
         case ARRIVE :
         {
-            s->num_letters_recvd--;
+            s->num_packets_recvd--;
             break;
         }
         case SEND :
         {
             tw_rand_reverse_unif(lp->rng);
-            s->num_letters_sent--;
+            s->num_packets_sent--;
             break;
         }
         default :
@@ -258,7 +250,7 @@ void post_office_RC_event_handler(post_office_state *s, tw_bf *bf, letter *in_ms
 
 }
 
-void post_office_final(post_office_state *s, tw_lp *lp)
+void switch_final(switch_state *s, tw_lp *lp)
 {
      int self = lp->gid;
 //    for(int i = 0; i < NUM_QOS_LEVEL; i++)
@@ -266,5 +258,5 @@ void post_office_final(post_office_state *s, tw_lp *lp)
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-     printf("Post Office %d: S:%d R:%d messages\n", self,s->num_letters_sent, s->num_letters_recvd);
+     printf("Switch %d: S:%d R:%d messages\n", self, s->num_packets_sent, s->num_packets_recvd);
 }

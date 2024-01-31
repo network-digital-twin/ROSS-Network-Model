@@ -1,50 +1,42 @@
-/*
-mail_main.c
-Mail System Simulator
-7-15-2016
-Neil McGlohon
-*/
-
-//includes
-#include "mail.h"
+#include "network.h"
 
 
-// Define LP types for Mailbox and Post Office
+// Define LP types for Terminal and Switch
 tw_lptype model_lps[] =
 {
      {
-          (init_f) mailbox_init,
-          (pre_run_f) mailbox_prerun,
-          (event_f) mailbox_event_handler,
-          (revent_f) mailbox_RC_event_handler,
+             (init_f) terminal_init,
+             (pre_run_f) terminal_prerun,
+             (event_f) terminal_event_handler,
+             (revent_f) terminal_RC_event_handler,
           (commit_f) NULL,
-          (final_f) mailbox_final,
-          (map_f) mail_map,
-          sizeof(mailbox_state)
+             (final_f) terminal_final,
+             (map_f) network_map,
+          sizeof(terminal_state)
      },
      {
-          (init_f) post_office_init,
-          (pre_run_f) post_office_prerun,
-          (event_f) post_office_event_handler,
-          (revent_f) post_office_RC_event_handler,
+             (init_f) switch_init,
+             (pre_run_f) switch_prerun,
+             (event_f) switch_event_handler,
+             (revent_f) switch_RC_event_handler,
           (commit_f) NULL,
-          (final_f) post_office_final,
-          (map_f) mail_map,
-          sizeof(post_office_state)
+             (final_f) switch_final,
+             (map_f) network_map,
+          sizeof(switch_state)
      },
      { 0 },
 };
 
 
 //Define command line arguments default values
-int total_mailboxes= 1;
-int total_post_offices = 1;
+int total_terminals= 1;
+int total_switches = 1;
 
 //Command line opts
 const tw_optdef model_opts[] = {
-     TWOPT_GROUP("Mail Model"),
-     TWOPT_UINT("mailboxes", total_mailboxes, "Number of mailboxes in simulation"),
-     TWOPT_UINT("postoffices", total_post_offices, "Number of post offices in simulation"),
+     TWOPT_GROUP("Network Model"),
+     TWOPT_UINT("terminals", total_terminals, "Number of terminals in simulation"),
+     TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
      TWOPT_END()
 };
 
@@ -59,26 +51,26 @@ void displayModelSettings()
                printf("*");
           }
           printf("\n");
-          printf("Mail Model Configuration:\n");
+          printf("Network Model Configuration:\n");
           printf("\t nnodes: %i\n", tw_nnodes());
           printf("\t g_tw_nlp: %llu\n", g_tw_nlp);
           printf("\t custom_LPs_per_pe: %i\n\n", num_LPs_per_pe);
 
-          printf("\t total_mailboxes: %i\n", total_mailboxes);
-          printf("\t total_post_offices: %i\n\n", total_post_offices);
+          printf("\t total_terminals: %i\n", total_terminals);
+          printf("\t total_switches: %i\n\n", total_switches);
 
           printf("\tGID:\n");
-          for(int i = 0; i < total_mailboxes; i++)
+          for(int i = 0; i < total_terminals; i++)
           {
-               tw_lpid assigned_post_office = get_assigned_post_office_LID(i);
+               tw_lpid assigned_switch = get_assigned_switch_LID(i);
 
-               printf("\t%i:   Mailbox assigned to PO %llu\n",i,assigned_post_office);
+               printf("\t%i:   Terminal assigned to Switch %llu\n", i, assigned_switch);
           }
 
-          for(int i = 0; i < total_post_offices; i++)
+          for(int i = 0; i < total_switches; i++)
           {
-               int gid = i + total_mailboxes;
-               printf("\t%i:   Post Office %i\n",gid,i);
+               int gid = i + total_terminals;
+               printf("\t%i:   Switch %i\n",gid,i);
           }
 
 
@@ -94,8 +86,8 @@ void displayModelSettings()
 
 
 //for doxygen
-#define mail_main main
-int mail_main(int argc, char** argv, char **env)
+#define network_main main
+int network_main(int argc, char** argv, char **env)
 {
 
     tw_opt_add(model_opts);
@@ -120,14 +112,14 @@ int mail_main(int argc, char** argv, char **env)
     // g_tw_nkp
     // g_tw_synchronization_protocol
 
-    g_tw_nlp = total_mailboxes + total_post_offices;
+    g_tw_nlp = total_terminals + total_switches;
     num_LPs_per_pe = g_tw_nlp / tw_nnodes();
     g_tw_lookahead = 1;
 
     displayModelSettings();
 
     //set up LPs within ROSS
-    tw_define_lps(num_LPs_per_pe, sizeof(letter));
+    tw_define_lps(num_LPs_per_pe, sizeof(tw_message));
     // note that g_tw_nlp gets set here by tw_define_lps
 
     // IF there are multiple LP types

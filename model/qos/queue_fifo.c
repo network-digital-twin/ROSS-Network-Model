@@ -2,7 +2,7 @@
 // Created by Nan on 2024/1/11.
 //
 
-#include "mail.h"
+#include "network.h"
 #include <stdlib.h>
 #include "assert.h"
 
@@ -33,7 +33,7 @@ void queue_destroy(queue_t *queue) {
  * @param msg the struct 'msg' internally must not contain any pointers
  * @return
  */
-void queue_append_to_tail(queue_t *queue, const letter *msg) {
+void queue_append_to_tail(queue_t *queue, const tw_message *msg) {
     assert(queue->size_in_bytes + msg->packet_size < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
@@ -78,7 +78,7 @@ node_t *queue_return_from_tail(queue_t *queue) {
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
-void queue_append_to_head(queue_t *queue, const letter *msg) {
+void queue_append_to_head(queue_t *queue, const tw_message *msg) {
     assert(queue->size_in_bytes + msg->packet_size < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
@@ -116,7 +116,7 @@ node_t *queue_return_from_head(queue_t *queue) {
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
-void queue_put(queue_t *queue, const letter *msg) {
+void queue_put(queue_t *queue, const tw_message *msg) {
     queue_append_to_tail(queue, msg);
 }
 
@@ -143,6 +143,6 @@ node_t *queue_take(queue_t *queue) {
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
-void queue_take_reverse(queue_t *queue, const letter *msg) {
+void queue_take_reverse(queue_t *queue, const tw_message *msg) {
     queue_append_to_head(queue, msg);
 }

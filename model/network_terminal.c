@@ -31,7 +31,7 @@ void terminal_init (terminal_state *s, tw_lp *lp)
         tw_event *e = tw_event_new(self,ts,lp);
         tw_message *out_msg = tw_event_data(e);
         out_msg->sender = self;
-        out_msg->final_dest = self;
+        out_msg->final_dest_LID = self;
         out_msg->type = KICKOFF;
         tw_event_send(e);
     }
@@ -41,7 +41,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
 {
     int self = lp->gid;
 
-    tw_lpid assigned_switch = get_assigned_switch_LID(lp->gid);
+    //tw_lpid assigned_switch = get_assigned_switch_LID(lp->gid);
 
     // printf("%d: I am a terminal assigned to PO %llu\n",self,assigned_switch);
 }
@@ -50,16 +50,16 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
 void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     tw_lpid self = lp->gid;
-    tw_lpid final_dest;
+    tw_lpid final_dest_LID;
     tw_lpid next_dest;
 
     // unsigned int ttl_lps = tw_nnodes() * g_tw_npe * nlp_per_pe;
     // dest = tw_rand_integer(lp->rng, 0, ttl_lps - 1);
-    final_dest = tw_rand_integer(lp->rng, 0, total_terminals - 1);
+    tw_lpid final_dest_GID = total_switches + tw_rand_integer(lp->rng, 0, total_terminals - 1);
+    final_dest_LID = get_terminal_LID(final_dest_GID);
 
     //Next destination from a terminal is its assigned switch
-    tw_lpid assigned_switch = get_assigned_switch_LID(lp->gid);
-    next_dest = get_switch_GID(assigned_switch);
+    next_dest = get_assigned_switch_GID(get_terminal_LID(lp->gid));
 
     // // initialize the bit field
     // *(int *) bf = (int) 0;
@@ -75,10 +75,11 @@ void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw
     tw_event *e = tw_event_new(next_dest,ts,lp);
     tw_message *out_msg = tw_event_data(e);
     out_msg->sender = self;
-    out_msg->final_dest = final_dest;
-    out_msg->next_dest = next_dest;
+    out_msg->final_dest_LID = final_dest_LID;
+    out_msg->next_dest_GID = next_dest;
     out_msg->type = ARRIVE;
     out_msg->packet_type = 0;
+    out_msg->packet_size = 1500 * 8;
     tw_event_send(e);
     s->num_packets_sent++;
 }

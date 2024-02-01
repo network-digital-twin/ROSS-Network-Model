@@ -16,9 +16,7 @@
 #define PROPAGATION_DELAY 50000 // 50000ns, switch-to-switch propagation delay
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
 #define SWITCH_TO_TERMINAL_BANDWIDTH 100000000000 // 100Gbps
-
-
-int num_out_ports = 1;
+#define NUM_TO_SWITCH_PORTS 2 // Number of to-switch ports
 
 
 //-------------Switch stuff-------------
@@ -26,25 +24,44 @@ int num_out_ports = 1;
 void switch_init (switch_state *s, tw_lp *lp)
 {
     int self = lp->gid;
+    int num_ports = NUM_TO_SWITCH_PORTS;  // TODO: load it from a file
 
     // init state data
     s->num_packets_recvd = 0;
-    s->num_queues = NUM_QOS_LEVEL * num_out_ports;
-    s->num_meters = NUM_QOS_LEVEL * num_out_ports;
-    s->num_schedulers = num_out_ports;
-    s->num_shapers = num_out_ports;
-    s->num_out_ports = num_out_ports;
-    s->bandwidths = (double *)malloc(sizeof(double) * s->num_out_ports);
-    s->propagation_delays = (double *)malloc(sizeof(double) * s->num_out_ports);
-    for(int i = 0; i < s->num_out_ports; i++) {
+    s->num_queues = NUM_QOS_LEVEL * num_ports;
+    s->num_meters = NUM_QOS_LEVEL * num_ports;
+    s->num_schedulers = num_ports;
+    s->num_shapers = num_ports;
+    s->num_ports = num_ports;
+    s->bandwidths = (double *)malloc(sizeof(double) * s->num_ports);
+    s->propagation_delays = (double *)malloc(sizeof(double) * s->num_ports);
+    for(int i = 0; i < s->num_ports; i++) {
         s->bandwidths[i] = BANDWIDTH;
         s->propagation_delays[i] = PROPAGATION_DELAY;
+    }
+
+    /* Init routing table */
+    // HARD CODED FOR 3 SWITCHES!
+    // TODO: load it dynamically!
+    assert(total_switches == 3);
+    s->routing_table_size = total_switches; // number of records in the routing table
+    s->routing = (route *)malloc(sizeof(route) * s->routing_table_size);
+    int port_id = 0;
+    for(int i = 0; i < s->routing_table_size; i++) {
+        if(i == self) {
+            s->routing[i].nextHop = -1;
+            s->routing[i].port_id = -1;
+        } else {
+            s->routing[i].nextHop = i;
+            s->routing[i].port_id = port_id;
+            port_id++;
+        }
     }
 
 
     /* Init meters */
     s->meter_list = (srTCM *)malloc(sizeof(srTCM) * s->num_meters);
-    params_srTCM params = {.CIR=100, .CBS=100, .EBS=100, .is_color_aware=0};
+    params_srTCM params = {.CIR=100*1024*1024, .CBS=500*1024*1024, .EBS=1024*1024*1024, .is_color_aware=0};
     for(int i = 0; i < s->num_meters; i++) {
         srTCM_init(&(s->meter_list[i]), &params);
     }
@@ -58,7 +75,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     /* Init shapers */
     s->shaper_list = (token_bucket *)malloc(sizeof(token_bucket) * s->num_shapers);
     for(int i = 0; i < s->num_shapers; i++) {
-         token_bucket_init(&(s->shaper_list[i]), 100, 100, s->bandwidths[i]);
+         token_bucket_init(&(s->shaper_list[i]), 1024*1024*1024, 100*1024*1024, s->bandwidths[i]);
     }
 
     /* Init schedulers */
@@ -72,7 +89,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     }
 
     /* Init flags of ports to 0s */
-    s->out_port_flags = calloc(s->num_out_ports, sizeof(int));
+    s->port_flags = calloc(s->num_ports, sizeof(int));
 
 }
 
@@ -87,6 +104,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     tw_lpid self = lp->gid;
     tw_stime ts;
     tw_lpid next_dest;
+    tw_lpid final_dest_LID = in_msg->final_dest_LID;
     int out_port;
 
     // modify the state here
@@ -95,11 +113,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- ROUTING ------- */
     // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
-    int assigned_switch_gid = get_assigned_switch_GID(in_msg->final_dest);
+    tw_lpid assigned_switch_gid = get_assigned_switch_GID(final_dest_LID);
     if(self == assigned_switch_gid) //You are the switch to deliver the packet, then send to terminal directly
     {
         bf->c0 = 1;  // use the bit field to record the "if" branch
-        next_dest = in_msg->final_dest;
+        next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
         double injection_delay = (double)in_msg->packet_size / SWITCH_TO_TERMINAL_BANDWIDTH;
@@ -110,7 +128,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         tw_message *out_msg = tw_event_data(e);
         memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->sender = self;
-        out_msg->next_dest = next_dest;
+        out_msg->next_dest_GID = next_dest;
         tw_event_send(e);
 
         // Update statistics
@@ -119,13 +137,13 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     }
 
     // Else, you need to route it to another switch
-    // TODO: Look up the routing table to get out_port and next_dest
-    out_port = 0;
-    next_dest = 2; //////////// !!!!!!!!!!!
+    // TODO: Look up the routing table to get out_port and next_dest_GID
+    out_port = s->routing[final_dest_LID].port_id;
+    next_dest = s->routing[final_dest_LID].nextHop;
 
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
-    int meter_index = (out_port + 1) * in_msg->packet_type;  // TODO: use a function to wrap this calculation
+    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet_type;  // TODO: use a function to wrap this calculation
 
     /*------- METER -------*/
     srTCM_state *meter_state = (srTCM_state *)malloc(sizeof(srTCM_state));
@@ -149,7 +167,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- DECIDE TO SEND NOW OR IN THE FUTURE -------*/
     // If the sending handler is already issuing recursive sending events, then do not schedule a new SEND event here
-    if(s->out_port_flags[out_port]) {
+    if(s->port_flags[out_port]) {
         bf->c2 = 1; // use the bit field to record the "if" branch
         return;
     }
@@ -161,6 +179,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
         // Use scheduler to take a packet from the queue
         node_t *node = sp_update(&s->scheduler_list[out_port]);
+        assert(node);
         // Update token and next_available_time of shaper
         token_bucket_consume(&s->shaper_list[out_port], &node->data, tw_now(lp));
 
@@ -182,7 +201,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         s->num_packets_sent++;   /////// STATE CHANGE
 
     } else { // Send out in the future! Schedule a future SEND event to myself
-        s->out_port_flags[out_port] = 1;  // Set the flag for this port, indicating the port can self-trigger SEND events
+        s->port_flags[out_port] = 1;  // Set the flag for this port, indicating the port can self-trigger SEND events
 
         ts = tw_now(lp) - s->shaper_list[out_port].next_available_time;
         tw_event *e = tw_event_new(self,ts,lp);
@@ -190,6 +209,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->type = SEND;
         out_msg->port_id = out_port;
+        out_msg->next_dest_GID = next_dest;
         tw_event_send(e);
     }
 
@@ -199,8 +219,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     tw_lpid self = lp->gid;
-    tw_lpid final_dest;
-    tw_lpid next_dest;
+    tw_lpid next_dest = in_msg->next_dest_GID;
     int out_port = in_msg->port_id;
     sp_scheduler *scheduler = &s->scheduler_list[out_port];
     token_bucket *shaper = &s->shaper_list[out_port];
@@ -219,9 +238,8 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     // Then send the packet to the destination
     tw_event *e = tw_event_new(next_dest,ts,lp);
     tw_message *out_msg = tw_event_data(e);
+    memcpy(out_msg, in_msg, sizeof(tw_message));
     out_msg->sender = self;
-    out_msg->final_dest = final_dest;
-    out_msg->next_dest = next_dest;
     tw_event_send(e);
 
     free(node);
@@ -235,9 +253,10 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->type = SEND;
         out_msg->port_id = out_port;
+        out_msg->next_dest_GID = next_dest;
         tw_event_send(e);
     } else {
-        s->out_port_flags[out_port] = 0;  // Clear the flag for this port, indicating the port will not self-trigger SEND events
+        s->port_flags[out_port] = 0;  // Clear the flag for this port, indicating the port will not self-trigger SEND events
     }
 
 

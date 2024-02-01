@@ -2,6 +2,7 @@
 #define _network_h
 
 #include "ross.h"
+#include "util/parser.h"
 
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
@@ -20,10 +21,10 @@ typedef enum {
 
 typedef struct
 {
-    tw_lpid sender;
-    tw_lpid final_dest; // The GID of a terminal
-    tw_lpid next_dest;
-    int packet_size;
+    tw_lpid sender; // GID
+    tw_lpid final_dest_LID; // The LID of the dest terminal
+    tw_lpid next_dest_GID; // GID
+    int packet_size;  // in bits
     int packet_type;  // ToS (type of service)
     message_type type;
     int port_id;   // for SEND event, which output port to use
@@ -95,9 +96,9 @@ enum {
 };
 
 typedef struct {
-    int CIR;  // committed information rate: token generation rate
-    int CBS;  // committed burst size: capacity of bucket C
-    int EBS;  // excess burst size: capacity of bucket E; can be 0
+    int CIR;  // committed information rate: token generation rate; (bps)
+    int CBS;  // committed burst size: capacity of bucket C; (bps)
+    int EBS;  // excess burst size: capacity of bucket E; can be 0; (bps)
     int is_color_aware;  // 1 for color-aware mode, 0 for color-blind mode
 } params_srTCM;
 
@@ -138,10 +139,14 @@ typedef struct {
      sp_scheduler *scheduler_list;
      int num_shapers;
      token_bucket *shaper_list;
-     int num_out_ports;
-     int *out_port_flags;
-     double *bandwidths;  // the bandwidth of each out port
+     // Ports
+     int num_ports;  // number of ports that connect to switches (not to terminals)
+     int *port_flags;
+     double *bandwidths;  // the bandwidth of each to-switch port
      double *propagation_delays;  // the propagation delay of each out port's physical cable
+     // Routing table
+     route *routing;  // Routing table. The index is the final destination switch's GID/LID
+     int routing_table_size; // number of records in the routing table
 } switch_state;
 
 
@@ -151,13 +156,17 @@ enum lpTypeVals
      TERMINAL = 0,
      SWITCH = 1
 };
-
+extern tw_lpid *switch_LID_to_terminal_GID;
+extern tw_lpid *terminal_GID_to_switch_LID;
+extern void init_mapping(int count, const tw_lpid *switch_LIDs);
 extern tw_lpid lpTypeMapper(tw_lpid gid);
 extern tw_peid network_map(tw_lpid gid);
-extern int get_terminal_GID(int lpid);
-extern int get_switch_GID(int lpid);
-extern int get_assigned_switch_LID(int lpid);
-extern int get_assigned_switch_GID(int lpid);
+extern tw_lpid get_terminal_GID(tw_lpid t_lid);
+extern tw_lpid get_terminal_LID(tw_lpid t_gid);
+extern tw_lpid get_switch_GID(tw_lpid s_lid);
+extern tw_lpid get_assigned_switch_GID(tw_lpid t_lid);
+extern tw_lpid get_attached_terminal_LID(tw_lpid s_lid);
+extern tw_lpid get_attached_terminal_GID(tw_lpid s_lid);
 
 //DRIVER -----------------------------
 

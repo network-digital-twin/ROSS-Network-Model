@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "network.h"
 
 
@@ -30,7 +31,7 @@ tw_lptype model_lps[] =
 
 //Define command line arguments default values
 int total_terminals= 2;
-int total_switches = 2;
+int total_switches = 3;
 
 //Command line opts
 const tw_optdef model_opts[] = {
@@ -60,17 +61,20 @@ void displayModelSettings()
         printf("\t total_switches: %i\n\n", total_switches);
 
         printf("\tGID:\n");
-        for(int i = 0; i < total_terminals; i++)
-        {
-            tw_lpid assigned_switch = get_assigned_switch_LID(i);
-
-            printf("\t%i:   Terminal assigned to Switch %llu\n", i, assigned_switch);
-        }
-
         for(int i = 0; i < total_switches; i++)
         {
-            int gid = i + total_terminals;
-            printf("\t%i:   Switch %i\n",gid,i);
+            tw_lpid attached_terminal = get_attached_terminal_LID(i);
+            if (attached_terminal == -1) {
+                printf("\t%i:   Switch\n", i);
+            } else {
+                printf("\t%i:   Switch attached with Terminal %llu\n", i, attached_terminal);
+            }
+        }
+
+        for(int i = 0; i < total_terminals; i++)
+        {
+            int gid = i + total_switches;
+            printf("\t%i:   Terminal %i\n",gid, get_terminal_LID(gid));
         }
 
 
@@ -115,6 +119,14 @@ int network_main(int argc, char** argv, char **env)
     g_tw_nlp = total_terminals + total_switches;
     num_LPs_per_pe = g_tw_nlp / tw_nnodes();
     g_tw_lookahead = 1;
+
+    // Set up LID-GID mapping
+    assert(total_switches == 3);
+    int num_switches_t = total_terminals;  // Number of switches that has terminals attached. One switch can only have one attached terminal
+    tw_lpid switch_LIDs_t[] = {0, 2};  // The LIDs of the switches that have terminals attached to them
+    assert(num_switches_t == sizeof(switch_LIDs_t) / sizeof(switch_LIDs_t[0]));
+    tw_lpid *ptr = switch_LIDs_t;
+    init_mapping(num_switches_t, ptr);
 
     displayModelSettings();
 

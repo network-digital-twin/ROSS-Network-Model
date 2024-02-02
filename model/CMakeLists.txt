@@ -26,6 +26,7 @@ SET(network_srcs
 		qos/shaper.c
 		qos/scheduler/strict_priority.c
 		util/parser.h
+		util/message.c
 )
 
 

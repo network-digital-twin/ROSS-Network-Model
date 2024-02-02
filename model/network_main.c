@@ -30,8 +30,11 @@ tw_lptype model_lps[] =
 
 
 //Define command line arguments default values
-int total_terminals= 2;
+int total_terminals= 3;
 int total_switches = 3;
+
+int num_switches_t = 3;  // Number of switches that has terminals attached. Currently, one switch can only have one attached terminal
+tw_lpid switch_LIDs_t[] = {0, 1,2};  // The LIDs of the switches that have terminals attached to them
 
 //Command line opts
 const tw_optdef model_opts[] = {
@@ -122,8 +125,6 @@ int network_main(int argc, char** argv, char **env)
 
     // Set up LID-GID mapping
     assert(total_switches == 3);
-    int num_switches_t = total_terminals;  // Number of switches that has terminals attached. One switch can only have one attached terminal
-    tw_lpid switch_LIDs_t[] = {0, 2};  // The LIDs of the switches that have terminals attached to them
     assert(num_switches_t == sizeof(switch_LIDs_t) / sizeof(switch_LIDs_t[0]));
     tw_lpid *ptr = switch_LIDs_t;
     init_mapping(num_switches_t, ptr);

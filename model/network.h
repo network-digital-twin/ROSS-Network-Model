@@ -8,7 +8,7 @@
 #define MEAN_SWITCH_PROCESS_WAIT .01
 // #define MEAN_SWITCH_PROCESS_WAIT 45.0
 
-#define MSG_PER_TERMINAL 1
+#define MSG_PER_TERMINAL 500
 
 
 //MESSAGE STRUCTS ------------------------------
@@ -21,15 +21,16 @@ typedef enum {
 
 typedef struct
 {
+    message_type type;
+    int port_id;   // for SEND event, which output port to use
     tw_lpid sender; // GID
     tw_lpid final_dest_LID; // The LID of the dest terminal
     tw_lpid next_dest_GID; // GID
-    int packet_size;  // in bits
+    int packet_size_in_bytes;  //
     int packet_type;  // ToS (type of service)
-    message_type type;
-    int port_id;   // for SEND event, which output port to use
 } tw_message; // It should not contain any pointers, otherwise the operations with queue will be affected.
 
+extern void print_message(const tw_message *msg);
 
 //QUEUE -----------------------------
 
@@ -50,7 +51,7 @@ typedef struct {
 
 void queue_init(queue_t *queue, int capacity_in_bytes);
 void queue_destroy(queue_t *queue);
-void queue_put(queue_t *queue, const tw_message *msg);
+node_t * queue_put(queue_t *queue, const tw_message *msg);
 void queue_put_reverse(queue_t *queue);
 node_t *queue_take(queue_t *queue);
 void queue_take_reverse(queue_t *queue, const tw_message *msg);

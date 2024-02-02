@@ -101,11 +101,18 @@ void switch_prerun (switch_state *s, tw_lp *lp)
 
 void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
+
+
     tw_lpid self = lp->gid;
     tw_stime ts;
-    tw_lpid next_dest;
+    tw_lpid next_dest; // to be decided by the routing table
+    int out_port; // to be decided by the routing table
     tw_lpid final_dest_LID = in_msg->final_dest_LID;
-    int out_port;
+
+    if(self==0) {
+        printf("ARRIVE[%llu][%f]", lp->gid, tw_now(lp));
+        print_message(in_msg);
+    }
 
     // modify the state here
     s->num_packets_recvd++;
@@ -116,19 +123,24 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     tw_lpid assigned_switch_gid = get_assigned_switch_GID(final_dest_LID);
     if(self == assigned_switch_gid) //You are the switch to deliver the packet, then send to terminal directly
     {
+        if(self==0) {
+            printf("I'm the last hop. \n");
+        }
         bf->c0 = 1;  // use the bit field to record the "if" branch
         next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
-        double injection_delay = (double)in_msg->packet_size / SWITCH_TO_TERMINAL_BANDWIDTH;
+        double injection_delay = (double)in_msg->packet_size_in_bytes * 8 / SWITCH_TO_TERMINAL_BANDWIDTH;
         double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
         ts = injection_delay + propagation_delay;
+        assert(ts >0);
 
         tw_event *e = tw_event_new(next_dest,ts,lp);
         tw_message *out_msg = tw_event_data(e);
         memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->sender = self;
         out_msg->next_dest_GID = next_dest;
+        out_msg->port_id = -1; // set this unused variable to -1.
         tw_event_send(e);
 
         // Update statistics
@@ -141,9 +153,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     out_port = s->routing[final_dest_LID].port_id;
     next_dest = s->routing[final_dest_LID].nextHop;
 
+
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
     int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet_type;  // TODO: use a function to wrap this calculation
+
 
     /*------- METER -------*/
     srTCM_state *meter_state = (srTCM_state *)malloc(sizeof(srTCM_state));
@@ -151,21 +165,28 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int color = srTCM_update(&s->meter_list[meter_index], in_msg, tw_now(lp));
     ///////////////////// STATE CHANGE
 
+
     /*------- DROPPER and QUEUE -------*/
     // Use a dropper to drop the packet if it is red or the queue is full.
     // Otherwise, put the packet into the corresponding queue
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
-    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet_size > queue->max_size_in_bytes) {
+    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet_size_in_bytes > queue->max_size_in_bytes) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
-        printf("Packet dropped at switch %llu\n", self);
+        if(self==0) {
+            printf("Packet dropped at switch %llu\n", self);
+        }
         return;
     } else {
-        queue_put(queue, in_msg);  ///////////////////// STATE CHANGE
+        // enqueue the node and modify the routing info of the enqueued node
+        ///////////////////// STATE CHANGE
+        node_t *enqueued_node = queue_put(queue, in_msg);
+        enqueued_node->data.next_dest_GID = next_dest;
+        enqueued_node->data.port_id = -1; // this variable is of no use, so set it to -1.
     }
 
 
-    /* ------- DECIDE TO SEND NOW OR IN THE FUTURE -------*/
+    /* ------- DECIDE TO SEND a packet NOW OR IN THE FUTURE -------*/
     // If the sending handler is already issuing recursive sending events, then do not schedule a new SEND event here
     if(s->port_flags[out_port]) {
         bf->c2 = 1; // use the bit field to record the "if" branch
@@ -173,44 +194,58 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     }
 
     // Send out now?
-    if(s->shaper_list[out_port].next_available_time <= tw_now(lp)) { // Send out now!
+    token_bucket *shaper = &s->shaper_list[out_port];
+    sp_scheduler *scheduler = &s->scheduler_list[out_port];
+    if(shaper->next_available_time <= tw_now(lp)) { // Send out now!
 
         bf->c3 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to take a packet from the queue
-        node_t *node = sp_update(&s->scheduler_list[out_port]);
-        assert(node);
+        node_t *node = sp_update(scheduler);
+        tw_message *packet_msg = &node->data;
+
         // Update token and next_available_time of shaper
-        token_bucket_consume(&s->shaper_list[out_port], &node->data, tw_now(lp));
+        token_bucket_consume(shaper, packet_msg, tw_now(lp));
 
         // Calculate the delay
-        double injection_delay = node->data.packet_size / s->bandwidths[out_port];
+        double injection_delay = packet_msg->packet_size_in_bytes * 8/ s->bandwidths[out_port];
         double propagation_delay = s->propagation_delays[out_port];
         ts = injection_delay + propagation_delay;
+        assert(ts >0);
 
         // Send the packet to the destination switch
         tw_event *e = tw_event_new(next_dest,ts,lp);
         tw_message *out_msg = tw_event_data(e);
-        memcpy(out_msg, &node->data, sizeof(tw_message)); /////////
-        out_msg->type = ARRIVE;
+        memcpy(out_msg, packet_msg, sizeof(tw_message));
+        out_msg->sender = self;
+        out_msg->port_id = -1; // no use here, so set it to -1.
+        assert(out_msg->type == ARRIVE);
         tw_event_send(e);
 
         free(node);
 
         // Update statistics
         s->num_packets_sent++;   /////// STATE CHANGE
+        if(self==0) {
+            printf("Send out now.\n");
+        }
 
     } else { // Send out in the future! Schedule a future SEND event to myself
         s->port_flags[out_port] = 1;  // Set the flag for this port, indicating the port can self-trigger SEND events
 
-        ts = tw_now(lp) - s->shaper_list[out_port].next_available_time;
+        ts = shaper->next_available_time - tw_now(lp);
+        assert(ts >0);
+
         tw_event *e = tw_event_new(self,ts,lp);
         tw_message *out_msg = tw_event_data(e);
-        memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->type = SEND;
         out_msg->port_id = out_port;
-        out_msg->next_dest_GID = next_dest;
         tw_event_send(e);
+        if(self==0) {
+            printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
+                   scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
+                   scheduler->queue_list[2].num_packets);
+        }
     }
 
 }
@@ -218,43 +253,67 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
 void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
+    /* Should only use in_msg->port_id. Do not use other fields of in_msg */
     tw_lpid self = lp->gid;
-    tw_lpid next_dest = in_msg->next_dest_GID;
+    tw_lpid next_dest;
     int out_port = in_msg->port_id;
     sp_scheduler *scheduler = &s->scheduler_list[out_port];
     token_bucket *shaper = &s->shaper_list[out_port];
 
+    if(self==0) {
+        printf("SEND[%llu][%f]\n", self, tw_now(lp));
+        printf("-----Handle Send. queue size: %d, %d, %d.\n", scheduler->queue_list[0].num_packets,
+               scheduler->queue_list[1].num_packets, scheduler->queue_list[2].num_packets);
+    }
+
     // Use scheduler to dequeue a packet. Need to free the memory later.
     node_t *node = sp_update(scheduler);
+    tw_message *packet_msg = &node->data;
+    next_dest = packet_msg->next_dest_GID;
+
     // Update shaper: token and next_available_time
-    token_bucket_consume(shaper, &node->data, tw_now(lp));
+    token_bucket_consume(shaper, packet_msg, tw_now(lp));
 
 
     // Calculate the delay of the event
-    double injection_delay = in_msg->packet_size / s->bandwidths[out_port];
+    double injection_delay = packet_msg->packet_size_in_bytes * 8 / s->bandwidths[out_port];
     double propagation_delay = s->propagation_delays[out_port];
     tw_stime ts = injection_delay + propagation_delay;
+    assert(ts >0);
 
     // Then send the packet to the destination
     tw_event *e = tw_event_new(next_dest,ts,lp);
     tw_message *out_msg = tw_event_data(e);
-    memcpy(out_msg, in_msg, sizeof(tw_message));
+    memcpy(out_msg, packet_msg, sizeof(tw_message));
     out_msg->sender = self;
+    out_msg->port_id = -1; // no use here, so set it to -1.
+    assert(out_msg->type == ARRIVE);
     tw_event_send(e);
+
+    if(self==0) {
+        printf("-----Send now. ");
+        print_message(out_msg);
+    }
 
     free(node);
 
 
     // If the scheduler has more to send, then schedule a new SEND event
     if(sp_has_next(scheduler)) {
-        ts = tw_now(lp) - shaper->next_available_time;
+        ts = shaper->next_available_time - tw_now(lp);
+        assert(ts >0);
+
         tw_event *e = tw_event_new(self,ts,lp);
         tw_message *out_msg = tw_event_data(e);
-        memcpy(out_msg, in_msg, sizeof(tw_message));
         out_msg->type = SEND;
         out_msg->port_id = out_port;
-        out_msg->next_dest_GID = next_dest;
         tw_event_send(e);
+
+        if(self==0) {
+            printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
+                   scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
+                   scheduler->queue_list[2].num_packets);
+        }
     } else {
         s->port_flags[out_port] = 0;  // Clear the flag for this port, indicating the port will not self-trigger SEND events
     }

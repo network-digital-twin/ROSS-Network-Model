@@ -19,7 +19,7 @@ int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
     const int CBS = meter->params.CBS;
     const int EBS = meter->params.EBS;
     const int is_color_aware = meter->params.is_color_aware;
-    const int packet_size = msg->packet_size;
+    const int packet_size = msg->packet_size_in_bytes;
     int num_new_tokens;
     int color = -1;
 

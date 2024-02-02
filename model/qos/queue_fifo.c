@@ -31,10 +31,10 @@ void queue_destroy(queue_t *queue) {
  * User must ensure there is enough space in the queue! We use assert() to check this.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
- * @return
+ * @return pointer to the newly enqueued node
  */
-void queue_append_to_tail(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet_size < queue->max_size_in_bytes);
+node_t *queue_append_to_tail(queue_t *queue, const tw_message *msg) {
+    assert(queue->size_in_bytes + msg->packet_size_in_bytes < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
     new_node->data = *msg;  // Copy the value that the pointer msg points to
@@ -50,7 +50,8 @@ void queue_append_to_tail(queue_t *queue, const tw_message *msg) {
 
     // update queue statistics
     queue->num_packets++;
-    queue->size_in_bytes += msg->packet_size;
+    queue->size_in_bytes += msg->packet_size_in_bytes;
+    return new_node;
 }
 
 node_t *queue_return_from_tail(queue_t *queue) {
@@ -67,7 +68,7 @@ node_t *queue_return_from_tail(queue_t *queue) {
 
     // update queue statistics
     queue->num_packets--;
-    queue->size_in_bytes -= tail_node->data.packet_size;
+    queue->size_in_bytes -= tail_node->data.packet_size_in_bytes;
     return tail_node;
 }
 
@@ -79,7 +80,7 @@ node_t *queue_return_from_tail(queue_t *queue) {
  * @param msg the struct 'msg' internally must not contain any pointers
  */
 void queue_append_to_head(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet_size < queue->max_size_in_bytes);
+    assert(queue->size_in_bytes + msg->packet_size_in_bytes < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
     new_node->data = *msg;  // Copy the value that the pointer msg points to
@@ -90,7 +91,7 @@ void queue_append_to_head(queue_t *queue, const tw_message *msg) {
 
     // update queue statistics
     queue->num_packets++;
-    queue->size_in_bytes += msg->packet_size;
+    queue->size_in_bytes += msg->packet_size_in_bytes;
 }
 
 
@@ -105,7 +106,7 @@ node_t *queue_return_from_head(queue_t *queue) {
 
     // update queue statistics
     queue->num_packets--;
-    queue->size_in_bytes -= head_node->data.packet_size;
+    queue->size_in_bytes -= head_node->data.packet_size_in_bytes;
     return head_node;
 }
 
@@ -115,9 +116,10 @@ node_t *queue_return_from_head(queue_t *queue) {
  * User must ensure there is enough space in the queue! We use assert() to check this.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
+ * @return pointer to the newly enqueued node
  */
-void queue_put(queue_t *queue, const tw_message *msg) {
-    queue_append_to_tail(queue, msg);
+node_t * queue_put(queue_t *queue, const tw_message *msg) {
+    return queue_append_to_tail(queue, msg);
 }
 
 void queue_put_reverse(queue_t *queue) {

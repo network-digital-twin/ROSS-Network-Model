@@ -33,6 +33,7 @@ void terminal_init (terminal_state *s, tw_lp *lp)
         out_msg->sender = self;
         out_msg->final_dest_LID = self;
         out_msg->type = KICKOFF;
+        out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
         tw_event_send(e);
     }
 }
@@ -79,7 +80,8 @@ void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw
     out_msg->next_dest_GID = next_dest;
     out_msg->type = ARRIVE;
     out_msg->packet_type = 0;
-    out_msg->packet_size = 1500 * 8;
+    out_msg->packet_size_in_bytes = 1500 * 8;
+    out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
     tw_event_send(e);
     s->num_packets_sent++;
 }

@@ -23,7 +23,7 @@ void token_bucket_init(token_bucket *bucket, int capacity, double rate, double p
  */
 void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time) {
     int num_new_tokens;
-    int packet_size = msg->packet_size;
+    int packet_size = msg->packet_size_in_bytes;
 
     // Calculate the number of newly generated tokens
     num_new_tokens = (int) (bucket->rate * (current_time - bucket->last_update_time));

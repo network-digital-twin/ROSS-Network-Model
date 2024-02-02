@@ -11,11 +11,11 @@
 #include <assert.h>
 
 #define NUM_QOS_LEVEL 3
-#define QOS_QUEUE_CAPACITY 65536 // 64KB
-#define BANDWIDTH 10000000000 // 10Gbps, switch-to-switch bandwidth
+#define QOS_QUEUE_CAPACITY 65536 // 64KB (in bytes)
+#define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth
 #define PROPAGATION_DELAY 50000 // 50000ns, switch-to-switch propagation delay
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
-#define SWITCH_TO_TERMINAL_BANDWIDTH 100000000000 // 100Gbps
+#define SWITCH_TO_TERMINAL_BANDWIDTH 100 // 100Gbps
 #define NUM_TO_SWITCH_PORTS 2 // Number of to-switch ports
 
 
@@ -23,7 +23,7 @@
 
 void switch_init (switch_state *s, tw_lp *lp)
 {
-    int self = lp->gid;
+    tw_lpid self = lp->gid;
     int num_ports = NUM_TO_SWITCH_PORTS;  // TODO: load it from a file
 
     // init state data
@@ -95,7 +95,7 @@ void switch_init (switch_state *s, tw_lp *lp)
 
 void switch_prerun (switch_state *s, tw_lp *lp)
 {
-     int self = lp->gid;
+     tw_lpid self = lp->gid;
      // printf("%d: I am a switch\n",self);
 }
 
@@ -130,7 +130,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
-        double injection_delay = (double)in_msg->packet_size_in_bytes * 8 / SWITCH_TO_TERMINAL_BANDWIDTH;
+        double injection_delay = calc_injection_delay(in_msg->packet_size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
         double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -208,7 +208,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         token_bucket_consume(shaper, packet_msg, tw_now(lp));
 
         // Calculate the delay
-        double injection_delay = packet_msg->packet_size_in_bytes * 8/ s->bandwidths[out_port];
+        double injection_delay = calc_injection_delay(packet_msg->packet_size_in_bytes, s->bandwidths[out_port]);
         double propagation_delay = s->propagation_delays[out_port];
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -276,7 +276,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
 
     // Calculate the delay of the event
-    double injection_delay = packet_msg->packet_size_in_bytes * 8 / s->bandwidths[out_port];
+    double injection_delay = calc_injection_delay(packet_msg->packet_size_in_bytes, s->bandwidths[out_port]);
     double propagation_delay = s->propagation_delays[out_port];
     tw_stime ts = injection_delay + propagation_delay;
     assert(ts >0);
@@ -378,11 +378,11 @@ void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_
 
 void switch_final(switch_state *s, tw_lp *lp)
 {
-     int self = lp->gid;
+     tw_lpid self = lp->gid;
 //    for(int i = 0; i < NUM_QOS_LEVEL; i++)
 //    {
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-     printf("Switch %d: S:%d R:%d messages\n", self, s->num_packets_sent, s->num_packets_recvd);
+     printf("Switch %llu: S:%d R:%d messages\n", self, s->num_packets_sent, s->num_packets_recvd);
 }

@@ -60,15 +60,15 @@ void queue_take_reverse(queue_t *queue, const tw_message *msg);
 //SHAPER -----------------------------
 
 typedef struct token_bucket {
-    int capacity;
-    int tokens;
-    double rate;
-    double port_bandwidth;  // The bandwidth of the port that the bucket is attached to, in bps.
+    long long capacity;
+    long long tokens;
+    long long rate;
+    double port_bandwidth;  // Gbps. The bandwidth of the port that the bucket is attached to.
     tw_stime last_update_time;
     tw_stime next_available_time;
 } token_bucket;
 
-void token_bucket_init(token_bucket *bucket, int capacity, double rate, double port_bandwidth);
+void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
 void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
 int token_bucket_update_reverse(token_bucket *bucket, tw_message *msg);
 
@@ -97,22 +97,22 @@ enum {
 };
 
 typedef struct {
-    int CIR;  // committed information rate: token generation rate; (bps)
-    int CBS;  // committed burst size: capacity of bucket C; (bps)
-    int EBS;  // excess burst size: capacity of bucket E; can be 0; (bps)
+    long long CIR;  // (in bps) committed information rate: token generation rate;
+    long long CBS;  // (in bits) committed burst size: capacity of bucket C;
+    long long EBS;  // (in bits) excess burst size: capacity of bucket E; can be 0;
     int is_color_aware;  // 1 for color-aware mode, 0 for color-blind mode
 } params_srTCM;
 
 typedef struct {
-    int T_c;  // number of tokens in bucket C, initialised to CBS
-    int T_e;  // number of tokens in bucket E, initialised to EBS
+    long long T_c;  // number of tokens in bucket C, initialised to CBS
+    long long T_e;  // number of tokens in bucket E, initialised to EBS
     tw_stime last_update_time;  // last time the meter is updated
     params_srTCM params;
 } srTCM;
 
 typedef struct {
-    int T_c;
-    int T_e;
+    long long T_c;
+    long long T_e;
     tw_stime last_update_time;
 } srTCM_state; // used for snapshot only
 
@@ -120,6 +120,11 @@ void srTCM_init(srTCM *meter, const params_srTCM *params);
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time);
 void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
 void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
+
+
+// UTILS -------------------------------
+tw_stime calc_injection_delay(int bytes, double GB_p_s);
+
 
 
 //STATE STRUCTS -----------------------------
@@ -144,7 +149,7 @@ typedef struct {
      int num_ports;  // number of ports that connect to switches (not to terminals)
      int *port_flags;
      double *bandwidths;  // the bandwidth of each to-switch port
-     double *propagation_delays;  // the propagation delay of each out port's physical cable
+     tw_stime *propagation_delays;  // the propagation delay of each out port's physical cable
      // Routing table
      route *routing;  // Routing table. The index is the final destination switch's GID/LID
      int routing_table_size; // number of records in the routing table

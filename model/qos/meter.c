@@ -4,6 +4,7 @@
 
 #include "network.h"
 #include <stdlib.h>
+#include <assert.h>
 
 
 // initialisation function.
@@ -15,23 +16,24 @@ void srTCM_init(srTCM *meter, const params_srTCM *params) {
 }
 
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
-    const int CIR = meter->params.CIR;
-    const int CBS = meter->params.CBS;
-    const int EBS = meter->params.EBS;
+    const long long CIR = meter->params.CIR;
+    const long long CBS = meter->params.CBS;
+    const long long EBS = meter->params.EBS;
     const int is_color_aware = meter->params.is_color_aware;
-    const int packet_size = msg->packet_size_in_bytes;
-    int num_new_tokens;
+    const int packet_size_in_bits = msg->packet_size_in_bytes * 8;
+    long long num_new_tokens;
     int color = -1;
 
     // Calculate the number of newly generated tokens
-    num_new_tokens = CIR * (int)(current_time - meter->last_update_time);
+    assert(CIR < INT_MAX); // if CIR is too large, the following line of calculation may lose precision
+    num_new_tokens = (long long)(CIR * (current_time - meter->last_update_time) / (1000.0*1000.0* 1000.0));
     meter->last_update_time = current_time;
 
     // Add tokens to the bucket(s)
     // First add to C bucket
     meter->T_c += num_new_tokens;
     if(meter->T_c > CBS) {
-        int _delta = meter->T_c - CBS;
+        long long _delta = meter->T_c - CBS;
         meter->T_c = CBS;
         // Then add excess tokens to E bucket
         meter->T_e += _delta;
@@ -43,13 +45,13 @@ int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
     // Mark/color the packet (T_e can be 0)
     // 1. color-blind mode
     if(is_color_aware == 0) {
-        if(packet_size <= meter->T_c) {
+        if(packet_size_in_bits <= meter->T_c) {
             color = COLOR_GREEN;
-            meter->T_c -= packet_size;
+            meter->T_c -= packet_size_in_bits;
         }
-        else if(packet_size <= meter->T_e) {
+        else if(packet_size_in_bits <= meter->T_e) {
             color = COLOR_YELLOW;
-            meter->T_e -= packet_size;
+            meter->T_e -= packet_size_in_bits;
         }
         else {
             color = COLOR_RED;

@@ -10,8 +10,20 @@
 
 #define MSG_PER_TERMINAL 500
 
+// ===================================
+// QOS REVERSE COMPUTATION STRUCTS ---
+// ===================================
 
-//MESSAGE STRUCTS ------------------------------
+// QOS METER STATE -------------------
+typedef struct {
+    long long T_c;
+    long long T_e;
+    tw_stime last_update_time;
+} srTCM_state; // used for snapshot only
+
+// ===================================
+// MESSAGE STRUCTS --------------------
+// ===================================
 
 typedef enum {
     KICKOFF,
@@ -30,11 +42,12 @@ typedef struct
     int packet_type;  // ToS (type of service)
 } tw_message; // It should not contain any pointers, otherwise the operations with queue will be affected.
 
-extern void print_message(const tw_message *msg);
 
-//QUEUE -----------------------------
+// ===================================
+// QOS STRUCTS -----------------------
+// ===================================
 
-
+// QOS QUEUE STRUCTS -----------------------------
 typedef struct node_t {
     tw_message data;
     struct node_t *next;
@@ -49,16 +62,7 @@ typedef struct {
     node_t *tail;
 } queue_t;
 
-void queue_init(queue_t *queue, int capacity_in_bytes);
-void queue_destroy(queue_t *queue);
-node_t * queue_put(queue_t *queue, const tw_message *msg);
-void queue_put_reverse(queue_t *queue);
-node_t *queue_take(queue_t *queue);
-void queue_take_reverse(queue_t *queue, const tw_message *msg);
-
-
-//SHAPER -----------------------------
-
+// QOS SHAPER STRUCTS -----------------------------
 typedef struct token_bucket {
     long long capacity;
     long long tokens;
@@ -68,13 +72,7 @@ typedef struct token_bucket {
     tw_stime next_available_time;
 } token_bucket;
 
-void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
-void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
-int token_bucket_update_reverse(token_bucket *bucket, tw_message *msg);
-
-
-//SCHEDULER -----------------------------
-
+// QOS SCHEDULER STRUCTS -----------------------------
 typedef struct {
     int num_queues;  // number of QoS queues (size of queue_list)
     int last_priority;  // last priority that has been served
@@ -82,13 +80,7 @@ typedef struct {
     token_bucket *shaper;  // pointer to the shaper
 } sp_scheduler;
 
-void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
-node_t *sp_update(sp_scheduler* scheduler);
-void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority);
-int sp_has_next(const sp_scheduler *scheduler);
-
-
-//METER -----------------------------
+// QOS METER STRUCTS -----------------------------
 
 enum {
     COLOR_GREEN = 0,
@@ -110,11 +102,38 @@ typedef struct {
     params_srTCM params;
 } srTCM;
 
-typedef struct {
-    long long T_c;
-    long long T_e;
-    tw_stime last_update_time;
-} srTCM_state; // used for snapshot only
+
+
+// ===================================
+// FUNCTIONS -------------------------
+// ===================================
+
+// QOS QUEUE FUNCTIONS -----------------------------
+
+void queue_init(queue_t *queue, int capacity_in_bytes);
+void queue_destroy(queue_t *queue);
+node_t * queue_put(queue_t *queue, const tw_message *msg);
+void queue_put_reverse(queue_t *queue);
+node_t *queue_take(queue_t *queue);
+void queue_take_reverse(queue_t *queue, const tw_message *msg);
+
+
+// QOS SHAPER FUNCTIONS -----------------------------
+
+void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
+void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
+int token_bucket_update_reverse(token_bucket *bucket, tw_message *msg);
+
+
+// QOS SCHEDULER FUNCTIONS -----------------------------
+
+void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
+node_t *sp_update(sp_scheduler* scheduler);
+void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority);
+int sp_has_next(const sp_scheduler *scheduler);
+
+
+// QOS METER FUNCTIONS -----------------------------
 
 void srTCM_init(srTCM *meter, const params_srTCM *params);
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time);
@@ -122,12 +141,16 @@ void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
 void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
 
-// UTILS -------------------------------
+// UTILS FUNCTIONS -------------------------------
 tw_stime calc_injection_delay(int bytes, double GB_p_s);
+extern void print_message(const tw_message *msg);
 
 
+// ===================================
+// LP
+// ===================================
 
-//STATE STRUCTS -----------------------------
+//LP STATE STRUCTS -----------------------------
 
 typedef struct {
      int num_packets_sent;

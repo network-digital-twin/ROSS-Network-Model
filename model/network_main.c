@@ -77,7 +77,7 @@ void displayModelSettings()
         for(int i = 0; i < total_terminals; i++)
         {
             int gid = i + total_switches;
-            printf("\t%i:   Terminal %i\n",gid, get_terminal_LID(gid));
+            printf("\t%i:   Terminal %llu\n",gid, get_terminal_LID(gid));
         }
 
 

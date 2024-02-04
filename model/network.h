@@ -13,13 +13,29 @@
 // ===================================
 // QOS REVERSE COMPUTATION STRUCTS ---
 // ===================================
+// Used for storing snapshot of the QoS modules.
 
 // QOS METER STATE -------------------
 typedef struct {
     long long T_c;
     long long T_e;
     tw_stime last_update_time;
-} srTCM_state; // used for snapshot only
+} srTCM_state;
+
+// QOS SHAPER STATE -------------------
+typedef struct {
+    long long tokens;
+    tw_stime last_update_time;
+    tw_stime next_available_time;
+} token_bucket_state;
+
+// QOS FULL STATE ---------------------
+typedef struct {
+    srTCM_state meter_state;
+    token_bucket_state shaper_state;
+    int enqueue_index;
+    int dequeue_index;
+} qos_state_rc; // snapshot of full state of QoS modules that are useful for reverse computation
 
 // ===================================
 // MESSAGE STRUCTS --------------------
@@ -40,7 +56,8 @@ typedef struct
     tw_lpid next_dest_GID; // GID
     int packet_size_in_bytes;  //
     int packet_type;  // ToS (type of service)
-} tw_message; // It should not contain any pointers, otherwise the operations with queue will be affected.
+    qos_state_rc qos_state_snapshot; // Snapshot of QoS modules. Used for reverse computation
+} tw_message; // It should not contain any pointers, otherwise the operations with qos queues will be affected.
 
 
 // ===================================

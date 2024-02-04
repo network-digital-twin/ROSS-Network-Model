@@ -201,11 +201,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         bf->c3 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to take a packet from the queue
-        node_t *node = sp_update(scheduler);
+        node_t *node = sp_update(scheduler);  ///////// STATE CHANGE
         tw_message *packet_msg = &node->data;
 
         // Update token and next_available_time of shaper
-        token_bucket_consume(shaper, packet_msg, tw_now(lp));
+        token_bucket_consume(shaper, packet_msg, tw_now(lp)); ///////// STATE CHANGE
 
         // Calculate the delay
         double injection_delay = calc_injection_delay(packet_msg->packet_size_in_bytes, s->bandwidths[out_port]);
@@ -266,13 +266,13 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
                scheduler->queue_list[1].num_packets, scheduler->queue_list[2].num_packets);
     }
 
-    // Use scheduler to dequeue a packet. Need to free the memory later.
-    node_t *node = sp_update(scheduler);
+    // Use scheduler to dequeue a packet. Need to free the memory later within this function.
+    node_t *node = sp_update(scheduler);  /////// STATE CHANGE
     tw_message *packet_msg = &node->data;
     next_dest = packet_msg->next_dest_GID;
 
     // Update shaper: token and next_available_time
-    token_bucket_consume(shaper, packet_msg, tw_now(lp));
+    token_bucket_consume(shaper, packet_msg, tw_now(lp));  /////// STATE CHANGE
 
 
     // Calculate the delay of the event

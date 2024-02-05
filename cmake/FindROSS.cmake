@@ -7,7 +7,7 @@
 
 FIND_PATH(WITH_ROSS_PREFIX
     NAMES include/ross.h
-		HINTS "../build-ross"
+		HINTS "/home/george/Documents/ROSS/build-ross"
 )
 
 FIND_LIBRARY(ROSS_LIBRARIES

@@ -27,17 +27,17 @@ void queue_destroy(queue_t *queue) {
 }
 
 /**
- * Enqueue: Put a message at the tail of queue. The value of 'msg' will be copied into the queue automatically.
+ * Enqueue: Put a packet at the tail of queue. The value of 'msg->packet' will be copied into the queue automatically.
  * User must ensure there is enough space in the queue! We use assert() to check this.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  * @return pointer to the newly enqueued node
  */
 node_t *queue_append_to_tail(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet_size_in_bytes < queue->max_size_in_bytes);
+    assert(queue->size_in_bytes + msg->packet.packet_size_in_bytes < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
-    new_node->data = *msg;  // Copy the value that the pointer msg points to
+    new_node->data = msg->packet;  // Copy the value that the pointer msg points to
     new_node->next = NULL;
     if (queue->head == NULL) {
         queue->head = new_node;
@@ -50,7 +50,7 @@ node_t *queue_append_to_tail(queue_t *queue, const tw_message *msg) {
 
     // update queue statistics
     queue->num_packets++;
-    queue->size_in_bytes += msg->packet_size_in_bytes;
+    queue->size_in_bytes += msg->packet.packet_size_in_bytes;
     return new_node;
 }
 
@@ -74,16 +74,16 @@ node_t *queue_return_from_tail(queue_t *queue) {
 
 
 /**
- * Enqueue: Put a message at the head of queue. The value of 'msg' will be copied into the queue automatically.
+ * Enqueue: Put a packet at the head of queue. The value of 'msg->packet' will be copied into the queue automatically.
  * User must ensure there is enough space in the queue! We use assert() to check this.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
 void queue_append_to_head(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet_size_in_bytes < queue->max_size_in_bytes);
+    assert(queue->size_in_bytes + msg->packet.packet_size_in_bytes < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
-    new_node->data = *msg;  // Copy the value that the pointer msg points to
+    new_node->data = msg->packet;  // Copy the value that the pointer msg points to
     new_node->next = queue->head;
     new_node->prev = NULL;
     queue->head->prev = new_node;
@@ -91,7 +91,7 @@ void queue_append_to_head(queue_t *queue, const tw_message *msg) {
 
     // update queue statistics
     queue->num_packets++;
-    queue->size_in_bytes += msg->packet_size_in_bytes;
+    queue->size_in_bytes += msg->packet.packet_size_in_bytes;
 }
 
 
@@ -112,7 +112,7 @@ node_t *queue_return_from_head(queue_t *queue) {
 
 
 /**
- * Enqueue: Put a message at the tail of queue. The value of 'msg' will be copied into the queue automatically.
+ * Enqueue: Put a packet at the tail of queue. The value of 'msg' will be copied into the queue automatically.
  * User must ensure there is enough space in the queue! We use assert() to check this.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
@@ -129,7 +129,7 @@ void queue_put_reverse(queue_t *queue) {
 }
 
 /***
- * Dequeue: Get a message from the head of queue. User must ensure there is at least one message in the queue!
+ * Dequeue: Get a packet from the head of queue. User must ensure there is at least one message in the queue!
  * We use assert() to check this.
  * @param queue
  * @return
@@ -141,7 +141,7 @@ node_t *queue_take(queue_t *queue) {
 }
 
 /**
- * Reverse the queue_take() operation. The value of 'msg' will be copied into the queue automatically.
+ * Reverse the queue_take() operation. The value of 'msg->packet' will be copied into the queue automatically.
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */

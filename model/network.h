@@ -52,17 +52,21 @@ typedef enum {
     SEND,
 } message_type;
 
+typedef struct {
+    tw_lpid sender; // GID
+    tw_lpid final_dest_LID; // The LID of the dest terminal
+    tw_lpid next_dest_GID; // GID
+    int packet_size_in_bytes;  //
+    int packet_type;  // ToS (type of service)
+} packet;
+
 // It should not contain any pointers, otherwise the operations with qos queues will be affected.
 // In distributed mode, having pointers may also cause problem.
 typedef struct
 {
     message_type type;
     int port_id;   // for SEND event and reverse computations: which output port to use
-    tw_lpid sender; // GID
-    tw_lpid final_dest_LID; // The LID of the dest terminal
-    tw_lpid next_dest_GID; // GID
-    int packet_size_in_bytes;  //
-    int packet_type;  // ToS (type of service)
+    packet packet;
     qos_state_rc qos_state_snapshot; // Snapshot of QoS modules. Used for reverse computation
 } tw_message;
 
@@ -73,7 +77,7 @@ typedef struct
 
 // QOS QUEUE STRUCTS -----------------------------
 typedef struct node_t {
-    tw_message data;
+    packet data;
     struct node_t *next;
     struct node_t *prev;
 } node_t;
@@ -145,7 +149,7 @@ void queue_take_reverse(queue_t *queue, const tw_message *msg);
 // QOS SHAPER FUNCTIONS -----------------------------
 
 void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
-void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
+void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time);
 void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
 void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
 
@@ -155,7 +159,7 @@ void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token
 node_t *sp_update(sp_scheduler* scheduler);
 void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, sp_scheduler_state *state);
 int sp_has_next(const sp_scheduler *scheduler);
-void sp_delta(sp_scheduler *scheduler, tw_message *msg, sp_scheduler_state *state);
+void sp_delta(sp_scheduler *scheduler, packet *dequeued_pkt, sp_scheduler_state *state);
 
 // QOS METER FUNCTIONS -----------------------------
 

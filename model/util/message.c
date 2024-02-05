@@ -13,12 +13,12 @@ void print_message(const tw_message *msg) {
            "packet_type %d, "
            "port_id %d"
            "\n",
-           msg->sender,
+           msg->packet.sender,
            msg->type,
-           msg->final_dest_LID,
-           msg->next_dest_GID,
-           msg->packet_size_in_bytes,
-           msg->packet_type,
+           msg->packet.final_dest_LID,
+           msg->packet.next_dest_GID,
+           msg->packet.packet_size_in_bytes,
+           msg->packet.packet_type,
            msg->port_id
            );
 

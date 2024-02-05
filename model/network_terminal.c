@@ -30,8 +30,8 @@ void terminal_init (terminal_state *s, tw_lp *lp)
         tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + 1;
         tw_event *e = tw_event_new(self,ts,lp);
         tw_message *out_msg = tw_event_data(e);
-        out_msg->sender = self;
-        out_msg->final_dest_LID = self;
+        out_msg->packet.sender = self;
+        out_msg->packet.final_dest_LID = self;
         out_msg->type = KICKOFF;
         out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
         tw_event_send(e);
@@ -75,12 +75,12 @@ void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw
     tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + 1;
     tw_event *e = tw_event_new(next_dest,ts,lp);
     tw_message *out_msg = tw_event_data(e);
-    out_msg->sender = self;
-    out_msg->final_dest_LID = final_dest_LID;
-    out_msg->next_dest_GID = next_dest;
     out_msg->type = ARRIVE;
-    out_msg->packet_type = 0;
-    out_msg->packet_size_in_bytes = 1500;
+    out_msg->packet.sender = self;
+    out_msg->packet.final_dest_LID = final_dest_LID;
+    out_msg->packet.next_dest_GID = next_dest;
+    out_msg->packet.packet_type = 0;
+    out_msg->packet.packet_size_in_bytes = 1500;
     out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
     tw_event_send(e);
     s->num_packets_sent++;

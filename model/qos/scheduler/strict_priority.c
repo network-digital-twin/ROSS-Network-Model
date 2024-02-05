@@ -56,7 +56,7 @@ int sp_has_next(const sp_scheduler *scheduler) {
  * @param dequeued_msg
  * @param state
  */
-void sp_delta(sp_scheduler *scheduler, tw_message *dequeued_msg, sp_scheduler_state *state) {
+void sp_delta(sp_scheduler *scheduler, packet *dequeued_pkt, sp_scheduler_state *state) {
     state->last_priority = scheduler->last_priority;
     message_type type;
     int port_id;   // for SEND event and reverse computations: which output port to use

@@ -22,9 +22,9 @@ void token_bucket_init(token_bucket *bucket, long long capacity, long long rate,
  * @param current_time
  * @return
  */
-void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time) {
+void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time) {
     long long num_new_tokens;
-    int packet_size = msg->packet_size_in_bytes;
+    int packet_size = pkt->packet_size_in_bytes;
 
     // Calculate the number of newly generated tokens
     assert(bucket->rate < INT_MAX);  // if rate is too large, the following line of calculation may lose precision

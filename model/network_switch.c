@@ -107,7 +107,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     tw_stime ts;
     tw_lpid next_dest; // to be decided by the routing table
     int out_port; // to be decided by the routing table
-    tw_lpid final_dest_LID = in_msg->final_dest_LID;
+    tw_lpid final_dest_LID = in_msg->packet.final_dest_LID;
 
     if(self==0) {
         printf("ARRIVE[%llu][%f]", lp->gid, tw_now(lp));
@@ -130,7 +130,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
-        double injection_delay = calc_injection_delay(in_msg->packet_size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
+        double injection_delay = calc_injection_delay(in_msg->packet.packet_size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
         double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -138,8 +138,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         tw_event *e = tw_event_new(next_dest,ts,lp);
         tw_message *out_msg = tw_event_data(e);
         memcpy(out_msg, in_msg, sizeof(tw_message));
-        out_msg->sender = self;
-        out_msg->next_dest_GID = next_dest;
+        out_msg->packet.sender = self;
+        out_msg->packet.next_dest_GID = next_dest;
         out_msg->port_id = -1; // set this unused variable to -1.
         tw_event_send(e);
 
@@ -156,7 +156,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
-    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet_type;  // TODO: use a function to wrap this calculation
+    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet.packet_type;  // TODO: use a function to wrap this calculation
     in_msg->qos_state_snapshot.meter_index = meter_index;  // save the meter index for reverse computation
 
     /*------- METER -------*/
@@ -173,7 +173,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     // Otherwise, put the packet into the corresponding queue
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
-    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet_size_in_bytes > queue->max_size_in_bytes) {
+    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.packet_size_in_bytes > queue->max_size_in_bytes) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
         if(self==0) {
             printf("Packet dropped at switch %llu\n", self);
@@ -184,7 +184,6 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         ///////////////////// STATE CHANGE
         node_t *enqueued_node = queue_put(queue, in_msg);
         enqueued_node->data.next_dest_GID = next_dest;
-        enqueued_node->data.port_id = -1; // this variable is of no use, so set it to -1.
     }
 
 
@@ -205,15 +204,15 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
         // Use scheduler to take a packet from the queue
         node_t *node = sp_update(scheduler);  ///////// STATE CHANGE
-        tw_message *packet_msg = &node->data;
-        sp_delta(scheduler, packet_msg, &in_msg->qos_state_snapshot.scheduler_state);  // save the state of the scheduler for reverse computation
+        packet *pkt = &node->data;
+        sp_delta(scheduler, pkt, &in_msg->qos_state_snapshot.scheduler_state);  // save the state of the scheduler for reverse computation
 
         // Update token and next_available_time of shaper
         token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);  // save the state of the shaper for reverse computation
-        token_bucket_consume(shaper, packet_msg, tw_now(lp)); ///////// STATE CHANGE
+        token_bucket_consume(shaper, pkt, tw_now(lp)); ///////// STATE CHANGE
 
         // Calculate the delay
-        double injection_delay = calc_injection_delay(packet_msg->packet_size_in_bytes, s->bandwidths[out_port]);
+        double injection_delay = calc_injection_delay(pkt->packet_size_in_bytes, s->bandwidths[out_port]);
         double propagation_delay = s->propagation_delays[out_port];
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -221,10 +220,10 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // Send the packet to the destination switch
         tw_event *e = tw_event_new(next_dest,ts,lp);
         tw_message *out_msg = tw_event_data(e);
-        memcpy(out_msg, packet_msg, sizeof(tw_message));
-        out_msg->sender = self;
+        out_msg->packet = *pkt;  // TODO: check if this is correct
+        out_msg->packet.sender = self;
         out_msg->port_id = -1; // no use here, so set it to -1.
-        assert(out_msg->type == ARRIVE);
+        out_msg->type = ARRIVE;
         tw_event_send(e);
 
         free(node);
@@ -288,7 +287,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
     if (bf->c3) { // Sent out now
         token_bucket *shaper = &s->shaper_list[in_msg->port_id];
         sp_scheduler *scheduler = &s->scheduler_list[in_msg->port_id];
-        sp_update_reverse(scheduler, , &in_msg->qos_state_snapshot.scheduler_state);
+        //sp_update_reverse(scheduler, , &in_msg->qos_state_snapshot.scheduler_state);
         token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
         s->num_packets_sent--;
         return;
@@ -318,15 +317,15 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
     // Use scheduler to dequeue a packet. Need to free the memory later within this function.
     node_t *node = sp_update(scheduler);  /////// STATE CHANGE
-    tw_message *packet_msg = &node->data;
-    next_dest = packet_msg->next_dest_GID;
+    packet *pkt = &node->data;
+    next_dest = pkt->next_dest_GID;
 
     // Update shaper: token and next_available_time
-    token_bucket_consume(shaper, packet_msg, tw_now(lp));  /////// STATE CHANGE
+    token_bucket_consume(shaper, pkt, tw_now(lp));  /////// STATE CHANGE
 
 
     // Calculate the delay of the event
-    double injection_delay = calc_injection_delay(packet_msg->packet_size_in_bytes, s->bandwidths[out_port]);
+    double injection_delay = calc_injection_delay(pkt->packet_size_in_bytes, s->bandwidths[out_port]);
     double propagation_delay = s->propagation_delays[out_port];
     tw_stime ts = injection_delay + propagation_delay;
     assert(ts >0);
@@ -334,10 +333,10 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     // Then send the packet to the destination
     tw_event *e = tw_event_new(next_dest,ts,lp);
     tw_message *out_msg = tw_event_data(e);
-    memcpy(out_msg, packet_msg, sizeof(tw_message));
-    out_msg->sender = self;
+    out_msg->packet = *pkt;
+    out_msg->packet.sender = self;
     out_msg->port_id = -1; // no use here, so set it to -1.
-    assert(out_msg->type == ARRIVE);
+    out_msg->type = ARRIVE;
     tw_event_send(e);
 
     if(self==0) {

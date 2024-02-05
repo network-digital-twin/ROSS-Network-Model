@@ -8,6 +8,7 @@ Network System Simulator
 #define _network_h
 
 #include "ross.h"
+#include "parsers.h"
 
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
@@ -36,6 +37,8 @@ typedef struct
 
 typedef struct
 {
+     message* msgs;
+
      int num_packets_sent;
      int num_packets_recvd;
      //TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
@@ -43,6 +46,8 @@ typedef struct
 
 typedef struct
 {
+     config conf;
+
      int num_packets_sent;
      int num_packets_recvd;
      //TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
@@ -54,8 +59,6 @@ enum lpTypeVals
      TERMINAL = 0,
      SWITCH = 1
 };
-
-
 
 
 extern tw_lpid lpTypeMapper(tw_lpid gid);

@@ -14,17 +14,27 @@
 //-------------Switch stuff-------------
 
 void switch_init (switch_state *s, tw_lp *lp)
-{
-     int self = lp->gid;
+{    
+    int self = lp->gid;
 
-     // init state data
-     s->num_packets_recvd = 0;
+    // init state data
+    s->num_packets_recvd = 0;
+    // for now hardcode path for testing
+    char* path = "..."; 
+    s->config = parseConfigFile(path, lp->gid);
 }
 
 void switch_prerun (switch_state *s, tw_lp *lp)
 {
-     int self = lp->gid;
-     // printf("%d: I am a switch\n",self);
+    int self = lp->gid;
+    // printf("%d: I am a switch\n",self);
+
+    // some prints for validation
+    printf("I am switch: printing my config and searching for next hop... \n")
+    printConfig(s->conf);
+    char *nextPort = getNextHopPort(s->conf, 11);
+    printf("Next hop for dest node 11 is: %s\n", nextPort);
+    printf("Looking for its BW: %f \n", getPortBandwidth(conf, nextPort));
 }
 
 void handle_arrive_event(switch_state *s, tw_bf *bf, message *in_msg, tw_lp *lp)

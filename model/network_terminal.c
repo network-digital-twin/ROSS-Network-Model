@@ -20,21 +20,24 @@ void terminal_init (terminal_state *s, tw_lp *lp)
 
     // init state data
     s->num_packets_recvd = -1;
+    // for now hardcode the path
+    char* path = "...";
+    s->pks = parseWorkload(path);
 
-    int i;
-    for(i = 0; i < MSG_PER_TERMINAL; i++)
-    {
-        // tw_event *e = tw_event_new(self,tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT),lp);
-        // tw_stime ts = 1;
-        // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + lookahead;
-        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + 1;
-        tw_event *e = tw_event_new(self,ts,lp);
-        message *msg = tw_event_data(e);
-        msg->sender = self;
-        msg->final_dest = self;
-        msg->type = KICKOFF;
-        tw_event_send(e);
-    }
+    // int i;
+    // for(i = 0; i < MSG_PER_TERMINAL; i++)
+    // {
+    //     // tw_event *e = tw_event_new(self,tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT),lp);
+    //     // tw_stime ts = 1;
+    //     // tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + lookahead;
+    //     tw_stime ts = tw_rand_exponential(lp->rng, MEAN_TERMINAL_WAIT) + 1;
+    //     tw_event *e = tw_event_new(self,ts,lp);
+    //     message *msg = tw_event_data(e);
+    //     msg->sender = self;
+    //     msg->final_dest = self;
+    //     msg->type = KICKOFF;
+    //     tw_event_send(e);
+    // }
 }
 
 void terminal_prerun(terminal_state *s, tw_lp *lp)
@@ -44,6 +47,13 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
     tw_lpid assigned_switch = get_assigned_switch_LID(lp->gid);
 
     // printf("%d: I am a terminal assigned to PO %llu\n",self,assigned_switch);
+
+    printf("I am terminal: Testing parsing of WL by printing the first 100 packets...\n");
+
+    for (int i = 0; i < 100; i++)
+    {
+        printf("packet: %d, %d, %d, %f, %f \n", s->pks.pks[i].id, s->pks.pks[i].src, s->pks.pks[i].dest, s->pks.pks[i].size, s->pks.pks[i].timstamp);
+    }
 }
 
 

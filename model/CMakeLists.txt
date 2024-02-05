@@ -18,11 +18,12 @@ SET(network_srcs
 		network_switch.c
 		network_map.c
 		network.h
-	model_config.h
+		model_config.h
 		network_terminal.c
+		parsers.h
+		workload_parser.c
+		config_parser.c
 )
-
-
 
 
 # Set the executable name here: model

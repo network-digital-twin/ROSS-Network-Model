@@ -130,7 +130,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
-        double injection_delay = calc_injection_delay(in_msg->packet.packet_size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
+        double injection_delay = calc_injection_delay(in_msg->packet.size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
         double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -156,7 +156,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
-    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet.packet_type;  // TODO: use a function to wrap this calculation
+    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet.type;  // TODO: use a function to wrap this calculation
     in_msg->qos_state_snapshot.meter_index = meter_index;  // save the meter index for reverse computation
 
     /*------- METER -------*/
@@ -173,7 +173,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     // Otherwise, put the packet into the corresponding queue
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
-    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.packet_size_in_bytes > queue->max_size_in_bytes) {
+    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
         if(self==0) {
             printf("Packet dropped at switch %llu\n", self);
@@ -212,7 +212,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         token_bucket_consume(shaper, pkt, tw_now(lp)); ///////// STATE CHANGE
 
         // Calculate the delay
-        double injection_delay = calc_injection_delay(pkt->packet_size_in_bytes, s->bandwidths[out_port]);
+        double injection_delay = calc_injection_delay(pkt->size_in_bytes, s->bandwidths[out_port]);
         double propagation_delay = s->propagation_delays[out_port];
         ts = injection_delay + propagation_delay;
         assert(ts >0);
@@ -325,7 +325,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
 
     // Calculate the delay of the event
-    double injection_delay = calc_injection_delay(pkt->packet_size_in_bytes, s->bandwidths[out_port]);
+    double injection_delay = calc_injection_delay(pkt->size_in_bytes, s->bandwidths[out_port]);
     double propagation_delay = s->propagation_delays[out_port];
     tw_stime ts = injection_delay + propagation_delay;
     assert(ts >0);

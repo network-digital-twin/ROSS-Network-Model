@@ -79,8 +79,8 @@ void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw
     out_msg->packet.sender = self;
     out_msg->packet.final_dest_LID = final_dest_LID;
     out_msg->packet.next_dest_GID = next_dest;
-    out_msg->packet.packet_type = 0;
-    out_msg->packet.packet_size_in_bytes = 1500;
+    out_msg->packet.type = 0;
+    out_msg->packet.size_in_bytes = 1500;
     out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
     tw_event_send(e);
     s->num_packets_sent++;

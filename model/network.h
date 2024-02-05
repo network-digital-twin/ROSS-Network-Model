@@ -56,8 +56,8 @@ typedef struct {
     tw_lpid sender; // GID
     tw_lpid final_dest_LID; // The LID of the dest terminal
     tw_lpid next_dest_GID; // GID
-    int packet_size_in_bytes;  //
-    int packet_type;  // ToS (type of service)
+    int size_in_bytes;  //
+    int type;  // ToS (type of service)
 } packet;
 
 // It should not contain any pointers, otherwise the operations with qos queues will be affected.

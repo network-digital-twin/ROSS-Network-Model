@@ -10,15 +10,15 @@ void print_message(const tw_message *msg) {
            "final_dest_LID %llu, "
            "next_dest_GID %llu, "
            "packet_size %d, "
-           "packet_type %d, "
+           "type %d, "
            "port_id %d"
            "\n",
            msg->packet.sender,
            msg->type,
            msg->packet.final_dest_LID,
            msg->packet.next_dest_GID,
-           msg->packet.packet_size_in_bytes,
-           msg->packet.packet_type,
+           msg->packet.size_in_bytes,
+           msg->packet.type,
            msg->port_id
            );
 

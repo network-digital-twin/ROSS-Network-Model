@@ -114,8 +114,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         print_message(in_msg);
     }
 
-    // modify the state here
-    s->num_packets_recvd++;
+    // update statistics
+    s->num_packets_recvd++; ///////////////////// STATE CHANGE
 
 
     /* ------- ROUTING ------- */
@@ -157,11 +157,13 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
     int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet_type;  // TODO: use a function to wrap this calculation
-
+    in_msg->qos_state_snapshot.meter_index = meter_index;  // save the meter index for reverse computation
 
     /*------- METER -------*/
-    srTCM_state *meter_state = (srTCM_state *)malloc(sizeof(srTCM_state));
+    // Take a snapshot for reverse computation
+    srTCM_state *meter_state = &in_msg->qos_state_snapshot.meter_state;
     srTCM_snapshot(&s->meter_list[meter_index], meter_state);
+    // Update
     int color = srTCM_update(&s->meter_list[meter_index], in_msg, tw_now(lp));
     ///////////////////// STATE CHANGE
 
@@ -196,6 +198,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     // Send out now?
     token_bucket *shaper = &s->shaper_list[out_port];
     sp_scheduler *scheduler = &s->scheduler_list[out_port];
+    in_msg->port_id = out_port;  // save the out_port for reverse computation
     if(shaper->next_available_time <= tw_now(lp)) { // Send out now!
 
         bf->c3 = 1; // use the bit field to record the "if" branch
@@ -203,8 +206,10 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // Use scheduler to take a packet from the queue
         node_t *node = sp_update(scheduler);  ///////// STATE CHANGE
         tw_message *packet_msg = &node->data;
+        sp_delta(scheduler, packet_msg, &in_msg->qos_state_snapshot.scheduler_state);  // save the state of the scheduler for reverse computation
 
         // Update token and next_available_time of shaper
+        token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);  // save the state of the shaper for reverse computation
         token_bucket_consume(shaper, packet_msg, tw_now(lp)); ///////// STATE CHANGE
 
         // Calculate the delay
@@ -232,6 +237,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     } else { // Send out in the future! Schedule a future SEND event to myself
         s->port_flags[out_port] = 1;  // Set the flag for this port, indicating the port can self-trigger SEND events
+        /////// STATE CHANGE
 
         ts = shaper->next_available_time - tw_now(lp);
         assert(ts >0);
@@ -246,6 +252,50 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
                    scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
                    scheduler->queue_list[2].num_packets);
         }
+    }
+
+}
+
+void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
+    s->num_packets_recvd--;
+
+    // Final hop
+    if (bf->c0) {
+        return;
+    }
+
+    /* ------- METER ------- */
+    int meter_index = in_msg->qos_state_snapshot.meter_index;
+    srTCM_update_reverse(&s->meter_list[meter_index], &in_msg->qos_state_snapshot.meter_state);
+
+    // Packet dropped
+    if (bf->c1) {
+        return;
+    }
+
+    /* ------- QUEUE ------- */
+    int queue_index = meter_index;
+    queue_t *queue = &s->qos_queue_list[queue_index];
+    queue_put_reverse(queue);
+
+
+    if (bf->c2) {
+        return;
+    }
+
+
+    // Has previously decided to send out now or in the future?
+    if (bf->c3) { // Sent out now
+        token_bucket *shaper = &s->shaper_list[in_msg->port_id];
+        sp_scheduler *scheduler = &s->scheduler_list[in_msg->port_id];
+        sp_update_reverse(scheduler, , &in_msg->qos_state_snapshot.scheduler_state);
+        token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
+        s->num_packets_sent--;
+        return;
+
+    } else { // Sent out in the future
+        s->port_flags[in_msg->port_id] = 0;
+        return;
     }
 
 }
@@ -324,6 +374,12 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
 }
 
+void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
+    s->num_packets_sent--;
+
+}
+
+
 void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
 
@@ -358,13 +414,12 @@ void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_
     switch (in_msg->type) {
         case ARRIVE :
         {
-            s->num_packets_recvd--;
+            handle_arrive_event_rc(s, bf, in_msg, lp);
             break;
         }
         case SEND :
         {
-            tw_rand_reverse_unif(lp->rng);
-            s->num_packets_sent--;
+            handle_send_event_rc(s, bf, in_msg, lp);
             break;
         }
         default :

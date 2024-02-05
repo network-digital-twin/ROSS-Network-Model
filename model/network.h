@@ -22,6 +22,10 @@ typedef struct {
     tw_stime last_update_time;
 } srTCM_state;
 
+typedef struct {
+    int last_priority;
+} sp_scheduler_state;
+
 // QOS SHAPER STATE -------------------
 typedef struct {
     long long tokens;
@@ -31,10 +35,11 @@ typedef struct {
 
 // QOS FULL STATE ---------------------
 typedef struct {
+    int meter_index;
+    int shaper_index;
     srTCM_state meter_state;
+    sp_scheduler_state scheduler_state;
     token_bucket_state shaper_state;
-    int enqueue_index;
-    int dequeue_index;
 } qos_state_rc; // snapshot of full state of QoS modules that are useful for reverse computation
 
 // ===================================
@@ -47,17 +52,19 @@ typedef enum {
     SEND,
 } message_type;
 
+// It should not contain any pointers, otherwise the operations with qos queues will be affected.
+// In distributed mode, having pointers may also cause problem.
 typedef struct
 {
     message_type type;
-    int port_id;   // for SEND event, which output port to use
+    int port_id;   // for SEND event and reverse computations: which output port to use
     tw_lpid sender; // GID
     tw_lpid final_dest_LID; // The LID of the dest terminal
     tw_lpid next_dest_GID; // GID
     int packet_size_in_bytes;  //
     int packet_type;  // ToS (type of service)
     qos_state_rc qos_state_snapshot; // Snapshot of QoS modules. Used for reverse computation
-} tw_message; // It should not contain any pointers, otherwise the operations with qos queues will be affected.
+} tw_message;
 
 
 // ===================================
@@ -139,16 +146,16 @@ void queue_take_reverse(queue_t *queue, const tw_message *msg);
 
 void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
 void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime current_time);
-int token_bucket_update_reverse(token_bucket *bucket, tw_message *msg);
-
+void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
+void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
 
 // QOS SCHEDULER FUNCTIONS -----------------------------
 
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
 node_t *sp_update(sp_scheduler* scheduler);
-void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, int priority);
+void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, sp_scheduler_state *state);
 int sp_has_next(const sp_scheduler *scheduler);
-
+void sp_delta(sp_scheduler *scheduler, tw_message *msg, sp_scheduler_state *state);
 
 // QOS METER FUNCTIONS -----------------------------
 

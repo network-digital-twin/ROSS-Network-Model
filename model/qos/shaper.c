@@ -55,3 +55,15 @@ void token_bucket_consume(token_bucket *bucket, const tw_message *msg, tw_stime 
     }
 
 }
+
+void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state) {
+    bucket->tokens = bucket_state->tokens;
+    bucket->last_update_time = bucket_state->last_update_time;
+    bucket->next_available_time = bucket_state->next_available_time;
+}
+
+void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state) {
+    state->tokens = bucket->tokens;
+    state->last_update_time = bucket->last_update_time;
+    state->next_available_time = bucket->next_available_time;
+}

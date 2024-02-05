@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "network.h"
-
+//#define DEBUG
 
 // Define LP types for Terminal and Switch
 tw_lptype model_lps[] =
@@ -99,6 +99,17 @@ int network_main(int argc, char** argv, char **env)
 
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);
+
+#ifdef DEBUG
+    // debug mode, need to attach a debugger after run
+    // See: https://www.jetbrains.com/help/clion/openmpi.html#debug-procedure
+    if(tw_nnodes() > 1)
+    {
+        int i = 0;
+        while (!i)
+            sleep(5);
+    }
+#endif
 
 
     //Useful ROSS variables and functions

@@ -11,6 +11,18 @@
 #define MSG_PER_TERMINAL 500
 
 // ===================================
+// PACKET STRUCTS --------------------
+// ===================================
+
+typedef struct {
+    tw_lpid sender; // GID
+    tw_lpid final_dest_LID; // The LID of the dest terminal
+    tw_lpid next_dest_GID; // GID
+    int size_in_bytes;  //
+    int type;  // ToS (type of service)
+} packet;
+
+// ===================================
 // QOS REVERSE COMPUTATION STRUCTS ---
 // ===================================
 // Used for storing snapshot of the QoS modules.
@@ -24,6 +36,7 @@ typedef struct {
 
 typedef struct {
     int last_priority;
+    packet packet;
 } sp_scheduler_state;
 
 // QOS SHAPER STATE -------------------
@@ -51,14 +64,6 @@ typedef enum {
     ARRIVE,
     SEND,
 } message_type;
-
-typedef struct {
-    tw_lpid sender; // GID
-    tw_lpid final_dest_LID; // The LID of the dest terminal
-    tw_lpid next_dest_GID; // GID
-    int size_in_bytes;  //
-    int type;  // ToS (type of service)
-} packet;
 
 // It should not contain any pointers, otherwise the operations with qos queues will be affected.
 // In distributed mode, having pointers may also cause problem.
@@ -103,7 +108,7 @@ typedef struct token_bucket {
 // QOS SCHEDULER STRUCTS -----------------------------
 typedef struct {
     int num_queues;  // number of QoS queues (size of queue_list)
-    int last_priority;  // last priority that has been served
+    int last_priority;  // For reverse computation only; last priority that has been served
     queue_t *queue_list;  // pointer to existing list of queues, index of the queue indicates the priority. 0 is the highest priority.
     token_bucket *shaper;  // pointer to the shaper
 } sp_scheduler;
@@ -143,7 +148,7 @@ void queue_destroy(queue_t *queue);
 node_t * queue_put(queue_t *queue, const tw_message *msg);
 void queue_put_reverse(queue_t *queue);
 node_t *queue_take(queue_t *queue);
-void queue_take_reverse(queue_t *queue, const tw_message *msg);
+void queue_take_reverse(queue_t *queue, const packet *pkt);
 
 
 // QOS SHAPER FUNCTIONS -----------------------------
@@ -157,9 +162,9 @@ void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
 
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper);
 node_t *sp_update(sp_scheduler* scheduler);
-void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, sp_scheduler_state *state);
+void sp_update_reverse(sp_scheduler* scheduler, const sp_scheduler_state *state);
 int sp_has_next(const sp_scheduler *scheduler);
-void sp_delta(sp_scheduler *scheduler, packet *dequeued_pkt, sp_scheduler_state *state);
+void sp_delta(sp_scheduler *scheduler, const packet *dequeued_pkt, sp_scheduler_state *state);
 
 // QOS METER FUNCTIONS -----------------------------
 

@@ -109,11 +109,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int out_port; // to be decided by the routing table
     tw_lpid final_dest_LID = in_msg->packet.final_dest_LID;
 
+#ifdef DEBUG
     if(self==0) {
         printf("ARRIVE[%llu][%f]", lp->gid, tw_now(lp));
         print_message(in_msg);
     }
-
+#endif
     // update statistics
     s->num_packets_recvd++; ///////////////////// STATE CHANGE
 
@@ -123,9 +124,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     tw_lpid assigned_switch_gid = get_assigned_switch_GID(final_dest_LID);
     if(self == assigned_switch_gid) //You are the switch to deliver the packet, then send to terminal directly
     {
+#ifdef DEBUG
+
         if(self==0) {
             printf("I'm the last hop. \n");
         }
+#endif
         bf->c0 = 1;  // use the bit field to record the "if" branch
         next_dest = get_terminal_GID(final_dest_LID);
 
@@ -175,15 +179,20 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     queue_t *queue = &s->qos_queue_list[queue_index];
     if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
+#ifdef DEBUG
+
         if(self==0) {
             printf("Packet dropped at switch %llu\n", self);
         }
+#endif
         return;
     } else {
         // enqueue the node and modify the routing info of the enqueued node
         ///////////////////// STATE CHANGE
         node_t *enqueued_node = queue_put(queue, in_msg);
         enqueued_node->data.next_dest_GID = next_dest;
+        printf("[%llu][%f] queue_address %x, queue_size %d\n", self, tw_now(lp), queue, queue->num_packets);
+
     }
 
 
@@ -205,10 +214,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // Use scheduler to take a packet from the queue
         node_t *node = sp_update(scheduler);  ///////// STATE CHANGE
         packet *pkt = &node->data;
-        sp_delta(scheduler, pkt, &in_msg->qos_state_snapshot.scheduler_state);  // save the state of the scheduler for reverse computation
+        // save the state (dequeued packet and queue index) of the scheduler for reverse computation
+        sp_delta(scheduler, pkt, &in_msg->qos_state_snapshot.scheduler_state);
 
         // Update token and next_available_time of shaper
-        token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);  // save the state of the shaper for reverse computation
+        // First save the state of the shaper for reverse computation
+        token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
         token_bucket_consume(shaper, pkt, tw_now(lp)); ///////// STATE CHANGE
 
         // Calculate the delay
@@ -230,11 +241,14 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
         // Update statistics
         s->num_packets_sent++;   /////// STATE CHANGE
+#ifdef DEBUG
+
         if(self==0) {
             printf("Send out now.\n");
         }
-
+#endif
     } else { // Send out in the future! Schedule a future SEND event to myself
+        bf->c4 = 1; // use the bit field to record the "if" branch
         s->port_flags[out_port] = 1;  // Set the flag for this port, indicating the port can self-trigger SEND events
         /////// STATE CHANGE
 
@@ -246,11 +260,14 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         out_msg->type = SEND;
         out_msg->port_id = out_port;
         tw_event_send(e);
+#ifdef DEBUG
+
         if(self==0) {
             printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
                    scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
                    scheduler->queue_list[2].num_packets);
         }
+#endif
     }
 
 }
@@ -260,6 +277,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
 
     // Final hop
     if (bf->c0) {
+        s->num_packets_sent--;
         return;
     }
 
@@ -272,9 +290,30 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
         return;
     }
 
+    // If the program runs to this place, it means the packet is enqueued.
+
+
+    /* SCHEDULER and SHAPER */
+    /* This must be put prior than the reverse computation of QUEUE.
+     * Because in the forward computation, the queue sometimes is modified twice: we first enqueue, then dequeue.
+     * Here in the reverse computation, we need to reverse the dequeue first, then reverse the enqueue.
+     * */
+    if (bf->c3) { // Sent out now
+        token_bucket *shaper = &s->shaper_list[in_msg->port_id];
+        sp_scheduler *scheduler = &s->scheduler_list[in_msg->port_id];
+        sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
+        token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
+        s->num_packets_sent--;
+
+    }
+
     /* ------- QUEUE ------- */
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
+    if(queue->size_in_bytes == 0) {
+        printf("reverse[%llu][%f] queue_address %x, queue_size%d\n", lp->gid, tw_now(lp), queue,queue->num_packets);
+
+    }
     queue_put_reverse(queue);
 
 
@@ -282,19 +321,8 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
         return;
     }
 
-
-    // Has previously decided to send out now or in the future?
-    if (bf->c3) { // Sent out now
-        token_bucket *shaper = &s->shaper_list[in_msg->port_id];
-        sp_scheduler *scheduler = &s->scheduler_list[in_msg->port_id];
-        //sp_update_reverse(scheduler, , &in_msg->qos_state_snapshot.scheduler_state);
-        token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
-        s->num_packets_sent--;
-        return;
-
-    } else { // Sent out in the future
+    if (bf->c4) { // Sent out in the future
         s->port_flags[in_msg->port_id] = 0;
-        return;
     }
 
 }
@@ -308,19 +336,24 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     int out_port = in_msg->port_id;
     sp_scheduler *scheduler = &s->scheduler_list[out_port];
     token_bucket *shaper = &s->shaper_list[out_port];
+#ifdef DEBUG
 
     if(self==0) {
         printf("SEND[%llu][%f]\n", self, tw_now(lp));
         printf("-----Handle Send. queue size: %d, %d, %d.\n", scheduler->queue_list[0].num_packets,
                scheduler->queue_list[1].num_packets, scheduler->queue_list[2].num_packets);
     }
-
+#endif
     // Use scheduler to dequeue a packet. Need to free the memory later within this function.
     node_t *node = sp_update(scheduler);  /////// STATE CHANGE
     packet *pkt = &node->data;
     next_dest = pkt->next_dest_GID;
+    // save the state (dequeued packet and queue index) of the scheduler for reverse computation
+    sp_delta(scheduler, pkt, &in_msg->qos_state_snapshot.scheduler_state);
 
     // Update shaper: token and next_available_time
+    // First save the state of the shaper for reverse computation
+    token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
     token_bucket_consume(shaper, pkt, tw_now(lp));  /////// STATE CHANGE
 
 
@@ -339,16 +372,21 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     out_msg->type = ARRIVE;
     tw_event_send(e);
 
+    free(node);
+
+    // Update statistics
+    s->num_packets_sent++;   /////// STATE CHANGE
+#ifdef DEBUG
+
     if(self==0) {
         printf("-----Send now. ");
         print_message(out_msg);
     }
-
-    free(node);
-
+#endif
 
     // If the scheduler has more to send, then schedule a new SEND event
     if(sp_has_next(scheduler)) {
+        bf->c0 = 1; // use the bit field to record the "if" branch
         ts = shaper->next_available_time - tw_now(lp);
         assert(ts >0);
 
@@ -357,24 +395,33 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         out_msg->type = SEND;
         out_msg->port_id = out_port;
         tw_event_send(e);
+#ifdef DEBUG
 
         if(self==0) {
             printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
                    scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
                    scheduler->queue_list[2].num_packets);
         }
+#endif
     } else {
         s->port_flags[out_port] = 0;  // Clear the flag for this port, indicating the port will not self-trigger SEND events
     }
 
 
-    // Update statistics
-    s->num_packets_sent++;   /////// STATE CHANGE
-
 }
 
 void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
+    int out_port = in_msg->port_id;
+    sp_scheduler *scheduler = &s->scheduler_list[out_port];
+    token_bucket *shaper = &s->shaper_list[out_port];
+
+    sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
+    token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
     s->num_packets_sent--;
+
+    if(!bf->c0) {
+        s->port_flags[out_port] = 1;
+    }
 
 }
 
@@ -410,6 +457,7 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 
 void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
+    printf("REVERSE[%llu][%f]msg_type: %d\n", lp->gid, tw_now(lp), in_msg->type);
     switch (in_msg->type) {
         case ARRIVE :
         {

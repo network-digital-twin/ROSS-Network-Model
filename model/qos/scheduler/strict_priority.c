@@ -27,13 +27,11 @@ node_t *sp_update(sp_scheduler* scheduler) {
 /**
  * Reverse function of sp_update(). The value of 'msg' will be copied into the corresponding queue automatically.
  * @param scheduler
- * @param msg the struct 'msg' internally must not contain any pointers
- * @param priority
+ * @param state
  */
-void sp_update_reverse(sp_scheduler* scheduler, const tw_message *msg, sp_scheduler_state *state) {
-    int priority = state->last_priority;
-    scheduler->last_priority = priority;
-    queue_take_reverse(&scheduler->queue_list[priority], msg);
+void sp_update_reverse(sp_scheduler* scheduler, const sp_scheduler_state *state) {
+    int index = state->last_priority;
+    queue_take_reverse(&scheduler->queue_list[index], &state->packet);
 }
 
 /**
@@ -56,13 +54,7 @@ int sp_has_next(const sp_scheduler *scheduler) {
  * @param dequeued_msg
  * @param state
  */
-void sp_delta(sp_scheduler *scheduler, packet *dequeued_pkt, sp_scheduler_state *state) {
+void sp_delta(sp_scheduler *scheduler, const packet *dequeued_pkt, sp_scheduler_state *state) {
     state->last_priority = scheduler->last_priority;
-    message_type type;
-    int port_id;   // for SEND event and reverse computations: which output port to use
-    tw_lpid sender; // GID
-    tw_lpid final_dest_LID; // The LID of the dest terminal
-    tw_lpid next_dest_GID; // GID
-    int packet_size_in_bytes;  //
-    int packet_type;  // ToS (type of service)
+    state->packet = *dequeued_pkt;
 }

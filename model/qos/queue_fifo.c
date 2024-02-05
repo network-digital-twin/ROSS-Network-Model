@@ -39,7 +39,7 @@ node_t *queue_append_to_tail(queue_t *queue, const tw_message *msg) {
     node_t *new_node = malloc(sizeof(node_t));
     new_node->data = msg->packet;  // Copy the value that the pointer msg points to
     new_node->next = NULL;
-    if (queue->head == NULL) {
+    if (queue->head == NULL) { // If there was no node in the queue
         queue->head = new_node;
         new_node->prev = NULL;
     } else {
@@ -59,12 +59,15 @@ node_t *queue_return_from_tail(queue_t *queue) {
         return NULL;
     }
     node_t *tail_node = queue->tail;
-    node_t *temp = queue->tail->prev;
-    temp->next = NULL;
-    free(queue->tail);
-    queue->tail = temp;
+    queue->tail = queue->tail->prev;
+    if (queue->tail) { // If the queue had more than one node
+        queue->tail->next = NULL;
+    } else { // If the queue only had one node -- no the queue is empty
+        queue->tail = NULL;
+        queue->head = NULL;
+    }
     tail_node->prev = NULL;
-    tail_node->next = NULL;
+//    tail_node->next = NULL; // redundant
 
     // update queue statistics
     queue->num_packets--;
@@ -79,19 +82,23 @@ node_t *queue_return_from_tail(queue_t *queue) {
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
-void queue_append_to_head(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet.size_in_bytes < queue->max_size_in_bytes);
+void queue_append_to_head(queue_t *queue, const packet *pkt) {
+    assert(queue->size_in_bytes + pkt->size_in_bytes < queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
-    new_node->data = msg->packet;  // Copy the value that the pointer msg points to
+    new_node->data = *pkt;  // Copy the value that the pointer msg points to
     new_node->next = queue->head;
     new_node->prev = NULL;
-    queue->head->prev = new_node;
-    queue->head = new_node;
-
+    if(queue->head) { // If the queue was not empty
+        queue->head->prev = new_node;
+        queue->head = new_node;
+    } else {
+        queue->head = new_node;
+        queue->tail = new_node;
+    }
     // update queue statistics
     queue->num_packets++;
-    queue->size_in_bytes += msg->packet.size_in_bytes;
+    queue->size_in_bytes += pkt->size_in_bytes;
 }
 
 
@@ -101,6 +108,12 @@ node_t *queue_return_from_head(queue_t *queue) {
     }
     node_t *head_node = queue->head;
     queue->head = head_node->next;
+    if (queue->head) { // If the queue had more than one node
+        queue->head->prev = NULL;
+    } else { // If the queue only had one node -- no the queue is empty
+        queue->tail = NULL;
+    }
+
     head_node->prev = NULL;  // this is redundant
     head_node->next = NULL;
 
@@ -125,6 +138,7 @@ node_t * queue_put(queue_t *queue, const tw_message *msg) {
 void queue_put_reverse(queue_t *queue) {
     assert(queue->num_packets > 0);
     node_t *node = queue_return_from_tail(queue);
+    assert(node !=NULL);
     free(node);
 }
 
@@ -145,6 +159,6 @@ node_t *queue_take(queue_t *queue) {
  * @param queue
  * @param msg the struct 'msg' internally must not contain any pointers
  */
-void queue_take_reverse(queue_t *queue, const tw_message *msg) {
-    queue_append_to_head(queue, msg);
+void queue_take_reverse(queue_t *queue, const packet *pkt) {
+    queue_append_to_head(queue, pkt);
 }

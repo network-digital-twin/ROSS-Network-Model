@@ -175,7 +175,7 @@ void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
 
 // UTILS FUNCTIONS -------------------------------
-tw_stime calc_injection_delay(int bytes, double GB_p_s);
+tw_stime calc_injection_delay(int bytes, double Gbps);
 extern void print_message(const tw_message *msg);
 
 
@@ -204,7 +204,7 @@ typedef struct {
      // Ports
      int num_ports;  // number of ports that connect to switches (not to terminals)
      int *port_flags;
-     double *bandwidths;  // the bandwidth of each to-switch port
+     double *bandwidths;  // the bandwidth of each to-switch port (Gbps)
      tw_stime *propagation_delays;  // the propagation delay of each out port's physical cable
      // Routing table
      route *routing;  // Routing table. The index is the final destination switch's GID/LID

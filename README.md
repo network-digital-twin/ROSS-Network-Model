@@ -2,11 +2,11 @@
 
 Follow the instructions to install ROSS and build it. Build ROSS and Phold and ensure Phold runs.
 
-Symnlink the model directory of this repo into the modeld directory of ROSS. Copy the Cmakelist of Phold into the model dir of this repo.
+Symlink the model directory of this repo into the modelled directory of ROSS. Copy the Cmakelist of Phold into the model dir of this repo.
 
-In the copied cmake file, change the sources and the executable name match the current ones.
+In the copied cmake file, change the sources and the executable name to match the current ones. (You can delete the test executables)
 
-Rebuild ROSS and this model will be build along with it.
+Rebuild ROSS, and this model will be built along with it.
 
 # Introduction
 

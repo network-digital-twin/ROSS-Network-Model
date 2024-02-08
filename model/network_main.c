@@ -79,7 +79,8 @@ void displayModelSettings()
      }
 }
 
-// for doxygen
+unsigned int num_LPs_per_pe;
+//for doxygen
 #define network_main main
 int network_main(int argc, char **argv, char **env)
 {

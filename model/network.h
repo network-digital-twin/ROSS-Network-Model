@@ -3,7 +3,6 @@ network.h
 Network System Simulator
 */
 
-
 #ifndef _network_h
 #define _network_h
 
@@ -16,12 +15,13 @@ Network System Simulator
 
 #define MSG_PER_TERMINAL 1
 
-//STRUCTS ------------------------------
+// STRUCTS ------------------------------
 
-typedef enum {
-    KICKOFF,
-    ARRIVE,
-    SEND,
+typedef enum
+{
+     KICKOFF,
+     ARRIVE,
+     SEND,
 } message_type;
 
 typedef struct
@@ -34,32 +34,30 @@ typedef struct
      message_type type;
 } message;
 
-
 typedef struct
 {
-     message* msgs;
+     packets pks;
 
      int num_packets_sent;
      int num_packets_recvd;
-     //TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
+     // TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
 } terminal_state;
 
 typedef struct
 {
-     config conf;
+     config *conf;
 
      int num_packets_sent;
      int num_packets_recvd;
-     //TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
+     // TODO consider an inbox so that there could maybe be ad-hoc p2p messaging, interesting model
 } switch_state;
 
-//MAPPING -----------------------------
+// MAPPING -----------------------------
 enum lpTypeVals
 {
      TERMINAL = 0,
      SWITCH = 1
 };
-
 
 extern tw_lpid lpTypeMapper(tw_lpid gid);
 extern tw_peid network_map(tw_lpid gid);
@@ -68,7 +66,7 @@ extern int get_switch_GID(int lpid);
 extern int get_assigned_switch_LID(int lpid);
 extern int get_assigned_switch_GID(int lpid);
 
-//DRIVER STUFF -----------------------------
+// DRIVER STUFF -----------------------------
 
 extern void terminal_init(terminal_state *s, tw_lp *lp);
 extern void terminal_prerun(terminal_state *s, tw_lp *lp);
@@ -77,7 +75,6 @@ extern void terminal_RC_event_handler(terminal_state *s, tw_bf *bf, message *in_
 extern void terminal_final(terminal_state *s, tw_lp *lp);
 extern void terminal_commit(terminal_state *s, tw_bf *bf, message *m, tw_lp *lp);
 
-
 extern void switch_init(switch_state *s, tw_lp *lp);
 extern void switch_prerun(switch_state *s, tw_lp *lp);
 extern void switch_event_handler(switch_state *s, tw_bf *bf, message *in_msg, tw_lp *lp);
@@ -85,7 +82,7 @@ extern void switch_RC_event_handler(switch_state *s, tw_bf *bf, message *in_msg,
 extern void switch_final(switch_state *s, tw_lp *lp);
 extern void switch_commit(switch_state *s, tw_bf *bf, message *m, tw_lp *lp);
 
-//MAIN STUFF-----------------------------
+// MAIN STUFF-----------------------------
 
 extern tw_lptype model_lps[];
 
@@ -95,6 +92,5 @@ unsigned int num_LPs_per_pe;
 
 int total_terminals;
 int total_switches;
-
 
 #endif

@@ -1,3 +1,13 @@
+# How to run (George's way cause nothing else worked)
+
+Follow the instructions to install ROSS and build it. Build ROSS and Phold and ensure Phold runs.
+
+Symnlink the model directory of this repo into the modeld directory of ROSS. Copy the Cmakelist of Phold into the model dir of this repo.
+
+In the copied cmake file, change the sources and the executable name match the current ones.
+
+Rebuild ROSS and this model will be build along with it.
+
 # Introduction
 
 This is an example model for use with [ROSS](http://github.com/carothersc/ROSS), the parallel discrete event simulation system at Rensselaer Polytechnic Institute.
@@ -5,7 +15,6 @@ This is an example model for use with [ROSS](http://github.com/carothersc/ROSS),
 This model simulates a simple postal network of terminals and switches. Terminals send packets which are delivered to specific assigned switches. The switches process packets, determining if each message that they receive can be delivered to a local terminal or if it must be routed to another switch.
 
 This example model shows simple usage of scheduling new events, altering and reading message states, mapping of multiple LPs in a PDES system, and other intricacies of ROSS model development.
-
 
 # Installation
 

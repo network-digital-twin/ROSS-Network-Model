@@ -86,12 +86,11 @@ extern void switch_commit(switch_state *s, tw_bf *bf, message *m, tw_lp *lp);
 
 extern tw_lptype model_lps[];
 
-tw_stime lookahead;
-unsigned int nlp_per_pe;
-unsigned int num_LPs_per_pe;
+extern tw_stime lookahead;
+extern unsigned int nlp_per_pe;
+extern unsigned int num_LPs_per_pe;
 
-int total_terminals;
-int total_switches;
-
+extern int total_terminals;
+extern int total_switches;
 
 #endif

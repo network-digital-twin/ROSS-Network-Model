@@ -176,7 +176,7 @@ config *parseConfigFile(char *path, int id)
     conf->routing = (route *)malloc(maxDestId * sizeof(route));
     conf->routingTableSize = maxDestId;
 
-    for (int i = 0; i < conf->routingTableSize; i++)
+    for (int i = 0; i < currentGroup; i++)
     {
         conf->routing[routes[i].dest] = routes[i];
     }

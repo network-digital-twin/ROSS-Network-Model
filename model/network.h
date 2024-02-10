@@ -4,6 +4,7 @@
 #include "ross.h"
 #include "util/parser.h"
 
+#define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
 // #define MEAN_SWITCH_PROCESS_WAIT 45.0
@@ -34,6 +35,7 @@ typedef struct {
     tw_stime last_update_time;
 } srTCM_state;
 
+// QOS SCHEDULER STATE -------------------
 typedef struct {
     int last_priority;
     packet packet;
@@ -43,7 +45,6 @@ typedef struct {
 typedef struct {
     long long tokens;
     tw_stime last_update_time;
-    tw_stime next_available_time;
 } token_bucket_state;
 
 // QOS FULL STATE ---------------------
@@ -53,6 +54,7 @@ typedef struct {
     srTCM_state meter_state;
     sp_scheduler_state scheduler_state;
     token_bucket_state shaper_state;
+    tw_stime port_available_time_rc; // For reverse computation: the next available time of a port
 } qos_state_rc; // snapshot of full state of QoS modules that are useful for reverse computation
 
 // ===================================
@@ -98,11 +100,10 @@ typedef struct {
 // QOS SHAPER STRUCTS -----------------------------
 typedef struct token_bucket {
     long long capacity;
-    long long tokens;
+    long long tokens; // Current number of tokens
     long long rate;
     double port_bandwidth;  // Gbps. The bandwidth of the port that the bucket is attached to.
     tw_stime last_update_time;
-    tw_stime next_available_time;
 } token_bucket;
 
 // QOS SCHEDULER STRUCTS -----------------------------
@@ -157,6 +158,7 @@ void token_bucket_init(token_bucket *bucket, long long capacity, long long rate,
 void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time);
 void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
 void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
+tw_stime token_bucket_next_available_time(token_bucket *bucket, int packet_size);
 
 // QOS SCHEDULER FUNCTIONS -----------------------------
 
@@ -205,6 +207,7 @@ typedef struct {
      int num_ports;  // number of ports that connect to switches (not to terminals)
      int *port_flags;
      double *bandwidths;  // the bandwidth of each to-switch port (Gbps)
+     tw_stime *ports_available_time; // the next available time of each port (due to busy with packet injection)
      tw_stime *propagation_delays;  // the propagation delay of each out port's physical cable
      // Routing table
      route *routing;  // Routing table. The index is the final destination switch's GID/LID

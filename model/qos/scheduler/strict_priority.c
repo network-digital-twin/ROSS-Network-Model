@@ -2,6 +2,7 @@
 // Created by Nan on 2024/1/25.
 //
 
+#include <assert.h>
 #include "network.h"
 
 void sp_init(sp_scheduler *scheduler, queue_t *queue_list, int num_queues, token_bucket *shaper) {
@@ -37,13 +38,14 @@ void sp_update_reverse(sp_scheduler* scheduler, const sp_scheduler_state *state)
 /**
  * Check if the scheduler has more packets to send
  * @param scheduler
- * @return 1 for true, 0 for false.
+ * @return the size (bytes) of next packet to be scheduled; 0 for false.
  */
 int sp_has_next(const sp_scheduler *scheduler) {
     for(int i = 0; i < scheduler->num_queues; i++) {
         queue_t *q = &scheduler->queue_list[i];
         if(q->num_packets > 0) {
-            return 1;
+            assert(q->head->data.size_in_bytes > 0);
+            return q->head->data.size_in_bytes;
         }
     }
     return 0;

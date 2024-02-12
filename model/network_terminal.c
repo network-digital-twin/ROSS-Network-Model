@@ -15,12 +15,12 @@
 
 void terminal_parse_workload(terminal_state *s, tw_lp *lp)
 {
-    s->pks = parseWorkload("/Users/georgediamantopoulos/Desktop/PhD/ZTE_proj/ROSS/ROSS-Network-Model/model/data/trace_second_SG.txt");
+    s->pks = parseWorkload("/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/trace_second_SG.txt");
 
     printf("----------------------------------------------------\n");
     printf("----------------------------------------------------\n");
     printf("I am terminal: Testing parsing of WL by printing the first 100 packets...\n");
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 10; i++)
     {
         printf("packet: %d, %d, %d, %f, %f \n", s->pks.pks[i].id, s->pks.pks[i].src, s->pks.pks[i].dest, s->pks.pks[i].size, s->pks.pks[i].timstamp);
     }

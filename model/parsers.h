@@ -49,7 +49,7 @@ typedef struct packets
 */
 
 // parsing
-extern void getNameSegment(char *line, char **currentSegment);
+extern char* getNameSegment(char *line);
 extern void parsePort(char *line, port *portList, int curIndex);
 extern int getColLocation(char *s);
 extern int getStartLocation(char *s);

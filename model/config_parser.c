@@ -53,7 +53,11 @@ config *parseConfigFile(char *path, int id)
         // this will run on "top level" segments i.e., ports, routing, type etc...
         if (line[0] != ' ')
         {
-            getNameSegment(line, &currentSegment);
+            if (currentSegment != NULL){
+                free(currentSegment);
+            }
+
+            currentSegment = getNameSegment(line);
             lineInSeg = -1; // still on the top level line
         }
 
@@ -184,19 +188,14 @@ config *parseConfigFile(char *path, int id)
     return conf;
 }
 
-void getNameSegment(char *line, char **currentSegment)
+char* getNameSegment(char *line)
 {
     int colLoc = getColLocation(line);
     char *segName = (char *)malloc(colLoc);
     strncpy(segName, line, colLoc);
+    segName[colLoc] = '\0';
 
-    if (*currentSegment == NULL)
-        free(*currentSegment);
-
-    *currentSegment = (char *)malloc(strlen(segName));
-    strncpy(*currentSegment, segName, strlen(segName));
-
-    free(segName);
+    return segName;
 }
 
 void parsePort(char *line, port *portList, int curIndex)

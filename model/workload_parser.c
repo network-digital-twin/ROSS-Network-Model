@@ -51,17 +51,23 @@ packet packetFromLine(char *line)
         case 0: // unique id
             pkt.id = atoi(word);
             break;
-        case 1: // src
+        case 1:
+            pkt.message_id = atoi(word);
+            break;
+        case 2: // src
             pkt.src = atoi(word);
             break;
-        case 2: // dest
+        case 3: // dest
             pkt.dest = atoi(word);
             break;
-        case 3: // packet size
-            pkt.size = atof(word);
+        case 4: // packet size
+            pkt.size = atoi(word);
             break;
-        case 4: // timestamp
-            pkt.timstamp = atof(word);
+        case 5: // timestamp
+            pkt.timestamp = atof(word);
+            break;
+        case 6:
+            pkt.priority_level = atoi(word);
             break;
         }
         word = strtok(NULL, " ");

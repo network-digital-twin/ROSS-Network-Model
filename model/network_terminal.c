@@ -22,7 +22,7 @@ void terminal_parse_workload(terminal_state *s, tw_lp *lp)
     printf("I am terminal: Testing parsing of WL by printing the first 100 packets...\n");
     for (int i = 0; i < 10; i++)
     {
-        printf("packet: %d, %d, %d, %f, %f \n", s->pks.pks[i].id, s->pks.pks[i].src, s->pks.pks[i].dest, s->pks.pks[i].size, s->pks.pks[i].timstamp);
+        printf("packet: %d, %d %d, %d, %d, %f, %d \n", s->pks.pks[i].id, s->pks.pks[i].message_id, s->pks.pks[i].src, s->pks.pks[i].dest, s->pks.pks[i].size, s->pks.pks[i].timestamp, s->pks.pks[i].priority_level);
     }
     printf("----------------------------------------------------\n");
     printf("----------------------------------------------------\n");

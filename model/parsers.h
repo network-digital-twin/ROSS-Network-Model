@@ -1,6 +1,7 @@
 #ifndef _parsers_h_
 #define _parsers_h_
 
+#include "ross.h"
 // switch configuration structs
 
 typedef struct port
@@ -32,10 +33,13 @@ typedef struct config
 typedef struct packet
 {
     int id;
+    int message_id;
     int src;
     int dest;
-    float size;
-    float timstamp;
+    int size;
+    tw_stime timestamp;
+    int priority_level;
+
 } packet;
 
 typedef struct packets

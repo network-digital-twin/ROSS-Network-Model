@@ -1,4 +1,4 @@
-#include "parsers.h"
+#include "util/parsers.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -20,13 +20,13 @@ packets parseWorkload(char *path)
 
     packets pks;
     pks.num = 0;
-    pks.pks = (packet *)malloc(pks.num * sizeof(packet));
+    pks.pks = (packet_load *)malloc(pks.num * sizeof(packet_load));
 
     while ((read = getline(&line, &len, fptr)) != -1)
     {
-        packet temp;
+        packet_load temp;
         temp = packetFromLine(line);
-        pks.pks = realloc(pks.pks, (pks.num + 1) * sizeof(packet));
+        pks.pks = realloc(pks.pks, (pks.num + 1) * sizeof(packet_load));
         pks.pks[pks.num] = temp;
         pks.num++;
     }
@@ -34,9 +34,9 @@ packets parseWorkload(char *path)
     return pks;
 }
 
-packet packetFromLine(char *line)
+packet_load packetFromLine(char *line)
 {
-    packet pkt;
+    packet_load pkt;
     char *word;
     int col;
 

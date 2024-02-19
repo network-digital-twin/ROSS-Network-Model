@@ -1,5 +1,8 @@
-#ifndef _parsers_h_
-#define _parsers_h_
+//
+// Created by George.
+//
+#ifndef NETWORK_MODEL_PARSER_H
+#define NETWORK_MODEL_PARSER_H
 
 #include "ross.h"
 // switch configuration structs
@@ -15,22 +18,23 @@ typedef struct route
 {
     int dest;
     int nextHop;
+    int port_id;
     char *portName;
 } route;
 
 typedef struct config
 {
-    int id;
-    char *type;
-    port *ports;
-    int numPorts;
-    route *routing;
-    int routingTableSize;
+    int id; // ID of the switch
+    char *type; // "access", "mixed", or "core"
+    port *ports; // To-switch port list
+    int numPorts; // number of to-switch ports
+    route *routing;  // Routing table
+    int routingTableSize; // number of records in the routing table
 } config;
 
 // workload structs
 
-typedef struct packet
+typedef struct packet_load
 {
     int id;
     int message_id;
@@ -40,11 +44,11 @@ typedef struct packet
     tw_stime timestamp;
     int priority_level;
 
-} packet;
+} packet_load;
 
 typedef struct packets
 {
-    packet *pks;
+    packet_load *pks;
     int num;
 } packets;
 
@@ -69,6 +73,6 @@ extern char *getNextHopPort(config *conf, int dest);
 */
 
 packets parseWorkload(char *path);
-packet packetFromLine(char *line);
+packet_load packetFromLine(char *line);
 
 #endif

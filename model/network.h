@@ -2,7 +2,7 @@
 #define _network_h
 
 #include "ross.h"
-#include "util/parser.h"
+#include "util/parsers.h"
 
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define MEAN_TERMINAL_WAIT .005
@@ -263,6 +263,8 @@ unsigned int num_LPs_per_pe;
 
 int total_terminals;
 int total_switches;
+extern char *trace_path;
+extern char *route_dir_path;
 
 
 #endif

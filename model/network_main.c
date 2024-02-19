@@ -36,6 +36,9 @@ int total_switches = 3;
 int num_switches_t = 3;  // Number of switches that has terminals attached. Currently, one switch can only have one attached terminal
 tw_lpid switch_LIDs_t[] = {0, 1,2};  // The LIDs of the switches that have terminals attached to them
 
+char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/trace_second_SG.txt";
+char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/second_subgraph";
+
 //Command line opts
 const tw_optdef model_opts[] = {
         TWOPT_GROUP("Network Model"),

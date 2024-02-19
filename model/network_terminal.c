@@ -11,12 +11,11 @@
 //Includes
 #include "network.h"
 
-
 //--------------Terminal stuff-------------
 
 void terminal_parse_workload(terminal_state *s, tw_lp *lp)
 {
-    s->pks = parseWorkload("/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/trace_second_SG.txt");
+    s->pks = parseWorkload(trace_path);
 
     printf("----------------------------------------------------\n");
     printf("----------------------------------------------------\n");

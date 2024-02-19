@@ -190,6 +190,7 @@ extern void print_message(const tw_message *msg);
 typedef struct {
      int num_packets_sent;
      int num_packets_recvd;
+     packets pks;
 } terminal_state;
 
 typedef struct {
@@ -212,6 +213,8 @@ typedef struct {
      // Routing table
      route *routing;  // Routing table. The index is the final destination switch's GID/LID
      int routing_table_size; // number of records in the routing table
+
+     config *conf;
 } switch_state;
 
 

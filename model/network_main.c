@@ -8,8 +8,8 @@ tw_lptype model_lps[] =
         {
             (init_f) terminal_init,
             (pre_run_f) terminal_prerun,
-            (event_f) terminal_event_handler,
-            (revent_f) terminal_RC_event_handler,
+            (event_f) NULL,
+            (revent_f) NULL,
             (commit_f) NULL,
             (final_f) terminal_final,
             (map_f) network_map,
@@ -30,19 +30,15 @@ tw_lptype model_lps[] =
 
 
 //Define command line arguments default values
-int total_terminals= 3;
+int total_terminals= 1;
 int total_switches = 3;
 
-int num_switches_t = 3;  // Number of switches that has terminals attached. Currently, one switch can only have one attached terminal
-tw_lpid switch_LIDs_t[] = {0, 1,2};  // The LIDs of the switches that have terminals attached to them
-
-char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/trace_second_SG.txt";
-char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/second_subgraph";
+char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
+char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
 
 //Command line opts
 const tw_optdef model_opts[] = {
         TWOPT_GROUP("Network Model"),
-        TWOPT_UINT("terminals", total_terminals, "Number of terminals in simulation"),
         TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
         TWOPT_END()
 };
@@ -65,24 +61,6 @@ void displayModelSettings()
 
         printf("\t total_terminals: %i\n", total_terminals);
         printf("\t total_switches: %i\n\n", total_switches);
-
-        printf("\tGID:\n");
-        for(int i = 0; i < total_switches; i++)
-        {
-            tw_lpid attached_terminal = get_attached_terminal_LID(i);
-            if (attached_terminal == -1) {
-                printf("\t%i:   Switch\n", i);
-            } else {
-                printf("\t%i:   Switch attached with Terminal %llu\n", i, attached_terminal);
-            }
-        }
-
-        for(int i = 0; i < total_terminals; i++)
-        {
-            int gid = i + total_switches;
-            printf("\t%i:   Terminal %llu\n",gid, get_terminal_LID(gid));
-        }
-
 
 
         for (int i = 0; i < 30; i++)
@@ -137,11 +115,7 @@ int network_main(int argc, char** argv, char **env)
     num_LPs_per_pe = g_tw_nlp / tw_nnodes();
     g_tw_lookahead = 1;
 
-    // Set up LID-GID mapping
     assert(total_switches == 3);
-    assert(num_switches_t == sizeof(switch_LIDs_t) / sizeof(switch_LIDs_t[0]));
-    tw_lpid *ptr = switch_LIDs_t;
-    init_mapping(num_switches_t, ptr);
 
     displayModelSettings();
 
@@ -157,6 +131,8 @@ int network_main(int argc, char** argv, char **env)
     g_tw_lp_types = model_lps;
     tw_lp_setup_types();
 
+    g_tw_ts_end = 1000000000.0;
+    printf("simulation end time: %f\n", g_tw_ts_end);
 
     tw_run();
     tw_end();

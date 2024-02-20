@@ -240,8 +240,8 @@ extern tw_lpid get_attached_terminal_GID(tw_lpid s_lid);
 
 extern void terminal_init(terminal_state *s, tw_lp *lp);
 extern void terminal_prerun(terminal_state *s, tw_lp *lp);
-extern void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
-extern void terminal_RC_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+//extern void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+//extern void terminal_RC_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
 extern void terminal_final(terminal_state *s, tw_lp *lp);
 extern void terminal_commit(terminal_state *s, tw_bf *bf, tw_message *m, tw_lp *lp);
 

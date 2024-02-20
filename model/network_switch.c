@@ -26,33 +26,27 @@ void switch_init_config(switch_state *s, tw_lp *lp)
 {
     char *path = (char *) malloc(strlen(route_dir_path) + 50);
     sprintf(path, "%s/%llu.yaml", route_dir_path, lp->gid);
+    printf("%s\n", path);
 
-    FILE * file;
-    file = fopen(path, "r");
-    if (file != NULL)
-    {
-        printf("%s\n", path);
+    s->conf = parseConfigFile(path, lp->gid);
+    printf("----------------------------------------------------\n");
+    printf("----------------------------------------------------\n");
+    // some prints for validation
+    printf("I am switch: printing my config and searching for next hop... \n");
+    printConfig(s->conf);
+    //char *nextPort = getNextHopPort(s->conf, 0);
+    //printf("Next hop for dest node 11 is: %s\n", nextPort);
+    //printf("Looking for its BW: %f \n", getPortBandwidth(s->conf, nextPort));
+    printf("----------------------------------------------------\n");
+    printf("----------------------------------------------------\n");
 
-        s->conf = parseConfigFile(path, 1);
-        printf("----------------------------------------------------\n");
-        printf("----------------------------------------------------\n");
-        // some prints for validation
-        printf("I am switch: printing my config and searching for next hop... \n");
-        printConfig(s->conf);
-        char *nextPort = getNextHopPort(s->conf, 11);
-        printf("Next hop for dest node 11 is: %s\n", nextPort);
-        printf("Looking for its BW: %f \n", getPortBandwidth(s->conf, nextPort));
-        printf("----------------------------------------------------\n");
-        printf("----------------------------------------------------\n");
-        fclose(file);
-    }
     free(path);
 
 }
 
 void switch_init (switch_state *s, tw_lp *lp)
 {
-    switch_init_config(s, lp);
+    //switch_init_config(s, lp);
 
     tw_lpid self = lp->gid;
     int num_ports = NUM_TO_SWITCH_PORTS;  // TODO: load it from a file
@@ -494,7 +488,7 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 {
 
     *(int *) bf = (int) 0;  // initialise the bit field. https://github.com/ROSS-org/ROSS/wiki/Tips-&-Tricks
-
+    printf("dd\n");
     switch (in_msg->type) {
         case ARRIVE :
         {

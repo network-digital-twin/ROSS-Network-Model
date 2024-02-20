@@ -242,7 +242,7 @@ char *getNextHopPort(config *conf, int dest)
 
 void printConfig(config *conf)
 {
-    int cnt, i = 0;
+    int cnt = 0, i = 0;
     printf("--------------------\n");
     printf("Config for node: %d\n", conf->id);
     printf("\tType: %s\n", conf->type);
@@ -253,7 +253,7 @@ void printConfig(config *conf)
     }
     printf("\tRouting Table: \n");
     printf("\t\t%d records! showing first 5 that are not NULL...\n", conf->routingTableSize);
-    while (cnt < 5 || i == conf->routingTableSize - 1)
+    while (cnt < 5 && cnt <= conf->routingTableSize - 1)
     {
         if (conf->routing[i].portName != NULL)
         {

@@ -5,18 +5,22 @@
 #include "network.h"
 
 void print_message(const tw_message *msg) {
-    printf("sender %llu, "
+    printf("send_time %f, "
+           "src %llu, "
+           "dest %llu, "
+           "prev_hop %llu, "
+           "next_hop %llu, "
            "message_type %d, "
-           "final_dest_LID %llu, "
-           "next_dest_GID %llu, "
            "packet_size %d, "
            "type %d, "
            "port_id %d"
            "\n",
-           msg->packet.sender,
+           msg->packet.send_time,
+           msg->packet.src,
+           msg->packet.dest,
+           msg->packet.prev_hop,
+           msg->packet.next_hop,
            msg->type,
-           msg->packet.final_dest_LID,
-           msg->packet.next_dest_GID,
            msg->packet.size_in_bytes,
            msg->packet.type,
            msg->port_id

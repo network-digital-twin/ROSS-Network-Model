@@ -29,6 +29,7 @@ SET(network_srcs
 		util/conversion.c
 		util/workload_parser.c
 		util/config_parser.c
+		util/stats.c
 )
 
 

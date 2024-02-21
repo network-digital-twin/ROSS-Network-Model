@@ -4,6 +4,8 @@
 #include "ross.h"
 #include "util/parsers.h"
 
+#define NUM_QOS_LEVEL 3
+
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
@@ -16,10 +18,12 @@
 // ===================================
 
 typedef struct {
-    tw_lpid sender; // GID
-    tw_lpid final_dest_LID; // The LID of the dest terminal
-    tw_lpid next_dest_GID; // GID
-    int size_in_bytes;  //
+    tw_stime send_time; // Initial time when the packet is generated
+    tw_lpid src; // Source switch
+    tw_lpid dest; // Final destination switch
+    tw_lpid prev_hop;
+    tw_lpid next_hop;
+    int size_in_bytes;
     int type;  // ToS (type of service)
 } packet;
 
@@ -176,10 +180,6 @@ void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
 void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
 
-// UTILS FUNCTIONS -------------------------------
-tw_stime calc_injection_delay(int bytes, double Gbps);
-extern void print_message(const tw_message *msg);
-
 
 // ===================================
 // LP
@@ -194,8 +194,15 @@ typedef struct {
 } terminal_state;
 
 typedef struct {
-     int num_packets_sent;
-     int num_packets_recvd;
+    int num_packets_sent;
+    int num_packets_recvd;
+    double **total_delay;   // [src switch][priority] in ns
+    double **jitter;  // [src switch][priority]
+    int **count;  // number of received packets [src switch][priority]
+} stats;  // stats of the switch
+
+typedef struct {
+    int num_qos_levels;
      int num_queues;
      queue_t *qos_queue_list;
      int num_meters;
@@ -215,6 +222,8 @@ typedef struct {
      int routing_table_size; // number of records in the routing table
 
      config *conf;
+
+    stats *stats;
 } switch_state;
 
 
@@ -224,24 +233,22 @@ enum lpTypeVals
      TERMINAL = 0,
      SWITCH = 1
 };
-extern tw_lpid *switch_LID_to_terminal_GID;
-extern tw_lpid *terminal_GID_to_switch_LID;
-extern void init_mapping(int count, const tw_lpid *switch_LIDs);
 extern tw_lpid lpTypeMapper(tw_lpid gid);
 extern tw_peid network_map(tw_lpid gid);
-extern tw_lpid get_terminal_GID(tw_lpid t_lid);
-extern tw_lpid get_terminal_LID(tw_lpid t_gid);
-extern tw_lpid get_switch_GID(tw_lpid s_lid);
-extern tw_lpid get_assigned_switch_GID(tw_lpid t_lid);
-extern tw_lpid get_attached_terminal_LID(tw_lpid s_lid);
-extern tw_lpid get_attached_terminal_GID(tw_lpid s_lid);
+
+// UTILS FUNCTIONS -------------------------------
+tw_stime calc_injection_delay(int bytes, double Gbps);
+extern void print_message(const tw_message *msg);
+extern void print_switch_stats(const switch_state *s, tw_lp *lp);
+extern void switch_init_stats(switch_state *s, tw_lp *lp);
+extern void switch_free_stats(switch_state *s);
+extern void write_switch_stats_to_file(const switch_state *s, tw_lp *lp);
+
 
 //DRIVER -----------------------------
 
 extern void terminal_init(terminal_state *s, tw_lp *lp);
 extern void terminal_prerun(terminal_state *s, tw_lp *lp);
-//extern void terminal_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
-//extern void terminal_RC_event_handler(terminal_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
 extern void terminal_final(terminal_state *s, tw_lp *lp);
 extern void terminal_commit(terminal_state *s, tw_bf *bf, tw_message *m, tw_lp *lp);
 
@@ -265,6 +272,7 @@ int total_terminals;
 int total_switches;
 extern char *trace_path;
 extern char *route_dir_path;
-
+extern char *home_dir; //used for output directory
+extern char *out_dir; //output dir
 
 #endif

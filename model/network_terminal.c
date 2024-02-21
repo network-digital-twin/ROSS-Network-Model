@@ -10,8 +10,13 @@
 
 //Includes
 #include "network.h"
+#include <time.h>
+#include <sys/stat.h>
+#include <assert.h>
 
 //--------------Terminal stuff-------------
+
+static void write_terminal_stats_to_file(int ***count);
 
 void terminal_parse_workload(terminal_state *s, tw_lp *lp)
 {
@@ -35,46 +40,105 @@ void terminal_init (terminal_state *s, tw_lp *lp)
     tw_lpid self = lp->gid;
 
     // init state data
-    s->num_packets_recvd = -1;
+    s->num_packets_sent = 0;
 
 
 }
 
 void terminal_prerun(terminal_state *s, tw_lp *lp)
 {
-    int src;
-    tw_stime time = 0;
+    int src, dest;
     tw_stime ts;
+
+     // [src][dest][priority]
+    int ***count = (int ***)malloc(sizeof(int **) * total_switches); // TODO: this is not memory efficient!
+    for(int i = 0; i < total_switches; i++) {
+        count[i] = (int **)malloc(sizeof(int *) * total_switches);
+        for(int j = 0; j < total_switches; j++) {
+            count[i][j] = (int *)malloc(sizeof(int) * NUM_QOS_LEVEL);
+            for(int k = 0; k < NUM_QOS_LEVEL; k++) {
+                count[i][j][k] = 0;
+            }
+        }
+    }
+
 
     for (int i = 0; i < s->pks.num; i++)
     {
         src = s->pks.pks[i].src;
-        ts = s->pks.pks[i].timestamp - time;
-        printf("To be scheduled at %f\n", s->pks.pks[i].timestamp);
+        dest = s->pks.pks[i].dest;
+        ts = s->pks.pks[i].timestamp; // We need to use absolute time here, because time will not proceed in this function.
 
-        tw_event *e = tw_event_new(src,ts,lp);
+        if(ts >= g_tw_ts_end) {
+            break;
+        }
+        printf("To be scheduled at %f\n", ts);
+
+        tw_event *e = tw_event_new(src, ts, lp);
         tw_message *out_msg = tw_event_data(e);
-        out_msg->type = ARRIVE;
-        out_msg->packet.sender = src;
-        out_msg->packet.final_dest_LID = s->pks.pks[i].dest; /////////
-        out_msg->packet.next_dest_GID = src; ///////
+        out_msg->packet.send_time = s->pks.pks[i].timestamp;
+        out_msg->packet.src = src;
+        out_msg->packet.dest = dest;
+        out_msg->packet.prev_hop = -1;
+        out_msg->packet.next_hop = -1;
         out_msg->packet.type = s->pks.pks[i].priority_level;
         out_msg->packet.size_in_bytes = s->pks.pks[i].size;
+        out_msg->type = ARRIVE;
         out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
         tw_event_send(e);
 
-        time = s->pks.pks[i].timestamp;
+        s->num_packets_sent++;
+        count[src][dest][s->pks.pks[i].priority_level]++;
+
 
     }
     printf("Schedule done\n");
 
+    write_terminal_stats_to_file(count);
+
+    // Free int ***count
+    for(int i = 0; i < total_switches; i++) {
+        for(int j = 0; j < total_switches; j++) {
+            free(count[i][j]);
+        }
+        free(count[i]);
+    }
+    free(count);
+
+
     // printf("%d: I am a terminal assigned to PO %llu\n",self,assigned_switch);
+}
+
+static void write_terminal_stats_to_file(int ***count) {// Write the statistics to a file
+    char str[150];
+    puts(out_dir);
+    strcpy(str, out_dir);
+    strcat(str, "/generate.csv");
+    FILE *fptr;
+    fptr = fopen(str, "w");
+
+    // print all value of count that is positive
+    if(fptr != NULL) {
+        fprintf(fptr, "src,dest,priority,pkt_sent\n");
+    }
+    for(int i = 0; i < total_switches; i++) {
+        for(int j = 0; j < total_switches; j++) {
+            for(int k = 0; k < NUM_QOS_LEVEL; k++) {
+                if(count[i][j][k] > 0) {
+                    if(fptr != NULL) {
+                        fprintf(fptr, "%d,%d,%d,%d\n", i, j, k, count[i][j][k]);
+                    }
+                }
+            }
+        }
+    }
+    fclose(fptr);
 }
 
 
 void terminal_final(terminal_state *s, tw_lp *lp)
 {
-    //int self = lp->gid;
-    //printf("Terminal %d: S:%d R:%d messages\n", self, s->num_packets_sent, s->num_packets_recvd);
+    int self = lp->gid;
+    printf("Terminal %d: S:%d messages\n", self, s->num_packets_sent);
 }
 

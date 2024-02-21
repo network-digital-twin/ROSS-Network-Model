@@ -1,5 +1,7 @@
 #include <assert.h>
 #include "network.h"
+#include <time.h>
+#include <sys/stat.h>
 //#define DEBUG
 
 // Define LP types for Terminal and Switch
@@ -35,6 +37,9 @@ int total_switches = 3;
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
 char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
+char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
+char *out_dir = NULL;
+
 
 //Command line opts
 const tw_optdef model_opts[] = {
@@ -72,6 +77,36 @@ void displayModelSettings()
     }
 }
 
+// 0 for success, -1 for failure
+int create_out_dir() {
+    // get current time
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char str_time[25];
+    sprintf(str_time, "%d-%02d-%02d_%02d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    char str[100];
+    // create the directories
+    strcpy(str, home_dir);
+    strcat(str, "/");
+    strcat(str, "output");
+    if(g_tw_mynode == 0){
+        mkdir(str, 0777);
+    }
+
+    strcat(str, "/");
+    strcat(str, str_time);
+    puts(str);
+
+    out_dir = (char *)malloc(strlen(str) + 1);
+    strcpy(out_dir, str);
+
+    int result = 0;
+    if(g_tw_mynode == 0) {
+        result = mkdir(str, 0777);
+    }
+    return result;
+}
 
 //for doxygen
 #define network_main main
@@ -131,8 +166,12 @@ int network_main(int argc, char** argv, char **env)
     g_tw_lp_types = model_lps;
     tw_lp_setup_types();
 
-    g_tw_ts_end = 1000000000.0;
+    g_tw_ts_end = 10000000000.0;
     printf("simulation end time: %f\n", g_tw_ts_end);
+
+    // prepare output directory
+    int result = create_out_dir();
+    assert(result == 0);
 
     tw_run();
     tw_end();

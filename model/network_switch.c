@@ -10,7 +10,6 @@
 #include <string.h>
 #include <assert.h>
 
-#define NUM_QOS_LEVEL 3
 #define QOS_QUEUE_CAPACITY 65536 // 64KiB (in bytes)
 #define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
 #define PROPAGATION_DELAY 50000 // 50000ns, switch-to-switch propagation delay
@@ -20,7 +19,6 @@
 
 
 //-------------Switch stuff-------------
-
 
 void switch_init_config(switch_state *s, tw_lp *lp)
 {
@@ -47,12 +45,13 @@ void switch_init_config(switch_state *s, tw_lp *lp)
 void switch_init (switch_state *s, tw_lp *lp)
 {
     //switch_init_config(s, lp);
+    s->num_qos_levels = NUM_QOS_LEVEL;  // TODO: load dynamically from file
+    switch_init_stats(s, lp);
 
     tw_lpid self = lp->gid;
     int num_ports = NUM_TO_SWITCH_PORTS;  // TODO: load it from a file
 
     // init state data
-    s->num_packets_recvd = 0;
     s->num_queues = NUM_QOS_LEVEL * num_ports;
     s->num_meters = NUM_QOS_LEVEL * num_ports;
     s->num_schedulers = num_ports;
@@ -133,9 +132,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     tw_lpid self = lp->gid;
     tw_stime ts;
     tw_stime ts_now = tw_now(lp);
-    tw_lpid next_dest; // to be decided by the routing table
+    tw_lpid next_hop; // to be decided by the routing table
     int out_port; // to be decided by the routing table
-    tw_lpid final_dest_LID = in_msg->packet.final_dest_LID;
+    tw_lpid final_dest = in_msg->packet.dest;
 
 #ifdef DEBUG
     if(self==0) {
@@ -143,47 +142,32 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         print_message(in_msg);
     }
 #endif
-    // update statistics
-    s->num_packets_recvd++; ///////////////////// STATE CHANGE
 
 
     /* ------- ROUTING ------- */
     // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
-    tw_lpid assigned_switch_gid = get_assigned_switch_GID(final_dest_LID);
-    if(self == assigned_switch_gid) //You are the switch to deliver the packet, then send to terminal directly
+    if(self == final_dest) //You are the final dest switch to deliver the packet
     {
-#ifdef DEBUG
-
-        if(self==0) {
-            printf("I'm the last hop. \n");
-        }
-#endif
         bf->c0 = 1;  // use the bit field to record the "if" branch
-        next_dest = get_terminal_GID(final_dest_LID);
 
         // Calculate the delay of the event
-        double injection_delay = calc_injection_delay(in_msg->packet.size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
-        double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
-        ts = injection_delay + propagation_delay;
-        assert(ts >0);
-
-        tw_event *e = tw_event_new(next_dest,ts,lp);
-        tw_message *out_msg = tw_event_data(e);
-        memcpy(out_msg, in_msg, sizeof(tw_message));
-        out_msg->packet.sender = self;
-        out_msg->packet.next_dest_GID = next_dest;
-        out_msg->port_id = -1; // set this unused variable to -1.
-        tw_event_send(e);
+//        double injection_delay = calc_injection_delay(in_msg->packet.size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
+//        double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
+//        ts = injection_delay + propagation_delay;
+//        assert(ts >0);
 
         // Update statistics
-        s->num_packets_sent++;
+        s->stats->num_packets_recvd++;
+        s->stats->count[in_msg->packet.src][in_msg->packet.type]++;
+        s->stats->total_delay[in_msg->packet.src][in_msg->packet.type] += ts_now - in_msg->packet.send_time;
+        ///////////////////// STATE CHANGE
         return;
     }
 
     // Else, you need to route it to another switch
-    // TODO: Look up the routing table to get out_port and next_dest_GID
-    out_port = s->routing[final_dest_LID].port_id;
-    next_dest = s->routing[final_dest_LID].nextHop;
+    // TODO: Look up the routing table to get out_port and next_hop
+    out_port = s->routing[final_dest].port_id;
+    next_hop = s->routing[final_dest].nextHop;
 
 
     /* ------- CLASSIFIER ------- */
@@ -218,8 +202,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // enqueue the node and modify the routing info of the enqueued node
         ///////////////////// STATE CHANGE
         node_t *enqueued_node = queue_put(queue, in_msg);
-        enqueued_node->data.next_dest_GID = next_dest;
-        printf("[%llu][%f] queue_address %x, queue_size %d\n", self, tw_now(lp), queue, queue->num_packets);
+        enqueued_node->data.next_hop = next_hop;
+//        printf("[%llu][%f] queue_address %x, queue_size %d\n", self, tw_now(lp), queue, queue->num_packets);
 
     }
 
@@ -255,10 +239,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         assert(ts >0);
 
         // Send the packet to the destination switch
-        tw_event *e = tw_event_new(next_dest,ts,lp);
+        tw_event *e = tw_event_new(next_hop, ts, lp);
         tw_message *out_msg = tw_event_data(e);
         out_msg->packet = *pkt;  // TODO: check if this is correct
-        out_msg->packet.sender = self;
+        out_msg->packet.prev_hop = self;
+        out_msg->packet.next_hop = -1;
         out_msg->port_id = -1; // no use here, so set it to -1.
         out_msg->type = ARRIVE;
         tw_event_send(e);
@@ -269,8 +254,6 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         in_msg->qos_state_snapshot.port_available_time_rc = port_av_time;
         // Update port available time
         s->ports_available_time[out_port] = MAX(ts_now, port_av_time) + injection_delay;  /////// STATE CHANGE
-        // Update statistics
-        s->num_packets_sent++;   /////// STATE CHANGE
 #ifdef DEBUG
         if(self==0) {
             printf("Send out now.\n");
@@ -306,11 +289,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 }
 
 void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
-    s->num_packets_recvd--;
 
     // Final hop
     if (bf->c0) {
-        s->num_packets_sent--;
+        s->stats->num_packets_recvd--;
+        s->stats->count[in_msg->packet.src][in_msg->packet.type]--;
+        s->stats->total_delay[in_msg->packet.src][in_msg->packet.type] -= (tw_now(lp) - in_msg->packet.send_time);
         return;
     }
 
@@ -336,7 +320,6 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         // No need to reverse shaper's tokens now, but reverse in later lines.
         s->ports_available_time[in_msg->port_id] = in_msg->qos_state_snapshot.port_available_time_rc;
-        s->num_packets_sent--;
 
     }
 
@@ -364,7 +347,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 {
     /* Should only use in_msg->port_id. Do not use other fields of in_msg */
     tw_lpid self = lp->gid;
-    tw_lpid next_dest;
+    tw_lpid next_hop;
     tw_stime ts;
     tw_stime ts_now = tw_now(lp);
     int out_port = in_msg->port_id;
@@ -394,7 +377,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         node_t *node = sp_update(scheduler);  /////// STATE CHANGE
         packet *pkt = &node->data;
         assert(pkt->size_in_bytes == next_pkt_size);
-        next_dest = pkt->next_dest_GID;
+        next_hop = pkt->next_hop;
         // save the state (dequeued packet and queue index) of the scheduler for reverse computation
         sp_delta(scheduler, pkt, &in_msg->qos_state_snapshot.scheduler_state);
 
@@ -410,10 +393,11 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         assert(ts >0);
 
         // Then send the packet to the destination
-        tw_event *e = tw_event_new(next_dest,ts,lp);
+        tw_event *e = tw_event_new(next_hop, ts, lp);
         tw_message *out_msg = tw_event_data(e);
         out_msg->packet = *pkt;  // TODO: check if this is correct
-        out_msg->packet.sender = self;
+        out_msg->packet.prev_hop = self;
+        out_msg->packet.next_hop = -1;
         out_msg->port_id = -1; // no use here, so set it to -1.
         out_msg->type = ARRIVE;
         tw_event_send(e);
@@ -425,7 +409,6 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         // Update port available time
         s->ports_available_time[out_port] = MAX(ts_now, port_av_time) + injection_delay;  /////// STATE CHANGE
         // Update statistics
-        s->num_packets_sent++;   /////// STATE CHANGE
 #ifdef DEBUG
         if(self==0) {
         printf("-----Send now. ");
@@ -473,7 +456,6 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
         sp_scheduler *scheduler = &s->scheduler_list[out_port];
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         s->ports_available_time[out_port] = in_msg->qos_state_snapshot.port_available_time_rc;
-        s->num_packets_sent--;
     }
     if(bf->c1) {
         s->port_flags[out_port] = 1;
@@ -488,7 +470,6 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 {
 
     *(int *) bf = (int) 0;  // initialise the bit field. https://github.com/ROSS-org/ROSS/wiki/Tips-&-Tricks
-    printf("dd\n");
     switch (in_msg->type) {
         case ARRIVE :
         {
@@ -544,5 +525,9 @@ void switch_final(switch_state *s, tw_lp *lp)
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-     printf("Switch %llu: S:%d R:%d messages\n", self, s->num_packets_sent, s->num_packets_recvd);
+    printf("Switch %llu: Receive:%d\n", self, s->stats->num_packets_recvd);
+    print_switch_stats(s, lp);
+    write_switch_stats_to_file(s, lp);
+    switch_free_stats(s);
+
 }

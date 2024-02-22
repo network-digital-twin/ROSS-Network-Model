@@ -29,7 +29,7 @@ SET(network_srcs
 # You will be executing the ./model binary
 ADD_EXECUTABLE(network ${network_srcs})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(network ${ROSS_LIBRARIES} ${MPI_C_LIBRARIES})
+TARGET_LINK_LIBRARIES(network ${ROSS_LIBRARIES} ${MPI_C_LIBRARIES} m)
 
 
 

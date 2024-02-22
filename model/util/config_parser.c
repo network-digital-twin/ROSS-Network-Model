@@ -154,6 +154,7 @@ config *parseConfigFile(char *path, int id)
                     colPos = getColLocation(line);
 
                     routes[currentGroup].portName = (char *)malloc((strlen(line) - colPos - 3)); // -3 cause -> ':', space and new_line
+                    memset(routes[currentGroup].portName, 0, (strlen(line) - colPos - 3));
                     strncpy(routes[currentGroup].portName, line + colPos + 2, strlen(line) - colPos - 3);
 
                     lineInGroup = 0;
@@ -200,27 +201,28 @@ char* getNameSegment(char *line)
 
 void parsePort(char *line, port *portList, int curIndex)
 {
-    port temp;
-
+    port *temp;
+    temp = (port*) malloc(sizeof(port));
     int colPos = getColLocation(line);
     int start = getStartLocation(line);
 
-    temp.id = curIndex;
+    temp->id = curIndex;
 
     // get port name
-    temp.name = (char *)malloc(colPos - 2);
-    strncpy(temp.name, line + start, colPos - 2);
+    temp->name = (char *)malloc(colPos-2);
+    memset(temp->name, 0, colPos-2);
+    strncpy(temp->name, line + start, colPos-2);
 
     // get port bw
     int bwStart = colPos + 2;                // skiping ": "
-    int bwSize = strlen(line) - bwStart - 1; // skipping new line
+    int bwSize = strlen(line) - bwStart - 2; // skipping new line
 
     char *bw = (char *)malloc(bwSize);
     strncpy(bw, line + bwStart, bwSize);
 
-    temp.bandwidth = strtod(bw, NULL);
+    temp->bandwidth = strtod(bw, NULL);
 
-    portList[curIndex] = temp;
+    portList[curIndex] = *temp;
 
     free(bw);
 }

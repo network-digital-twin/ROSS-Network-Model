@@ -151,11 +151,20 @@ config *parseConfigFile(char *path, int id)
                     /*
                         on the third line of the subgroup get the port name | port: port_name
                     */
-                    colPos = getColLocation(line);
+                    line[strcspn(line, "\n")] = 0; // stripping new line
 
-                    routes[currentGroup].portName = (char *)malloc((strlen(line) - colPos - 3)); // -3 cause -> ':', space and new_line
-                    memset(routes[currentGroup].portName, 0, (strlen(line) - colPos - 3));
-                    strncpy(routes[currentGroup].portName, line + colPos + 2, strlen(line) - colPos - 3);
+                    char* word = strtok(line, ":");
+                    int col = 0;
+                    while (word != NULL)
+                    {
+                        if (col == 1){
+                            routes[currentGroup].portName = (char *)malloc(strlen(word)-1); // -3 cause -> ':', space and new_line
+                            memset(routes[currentGroup].portName, 0, strlen(word)-1);
+                            strncpy(routes[currentGroup].portName, word+1, strlen(word)-1);
+                        }
+                        word = strtok(NULL, ":");
+                        col += 1;
+                    }
 
                     lineInGroup = 0;
                     currentGroup++;
@@ -254,8 +263,8 @@ void printConfig(config *conf)
         printf("\t\tid: %d: %s | %f\n", conf->ports[i].id, conf->ports[i].name, conf->ports[i].bandwidth);
     }
     printf("\tRouting Table: \n");
-    printf("\t\t%d records! showing first 5 that are not NULL...\n", conf->routingTableSize);
-    while (cnt < 5 && cnt <= conf->routingTableSize - 1)
+    printf("\t\t%d records! showing first 20 that are not NULL...\n", conf->routingTableSize);
+    while (cnt < 20 || i <= conf->routingTableSize - 1)
     {
         if (conf->routing[i].portName != NULL)
         {

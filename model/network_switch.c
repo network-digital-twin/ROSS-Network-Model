@@ -13,11 +13,10 @@
 
 //-------------Switch stuff-------------
 
-void switch_init_config(switch_state *s, tw_lp *lp)
+void switch_init_config(switch_state *s, tw_lp *lp, char* path)
 {
-    s->conf = parseConfigFile("/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/second_subgraph/1.yaml", 1);
+    s->conf = parseConfigFile(path, 5);
 
-     printf("----------------------------------------------------\n");
      printf("----------------------------------------------------\n");
      // some prints for validation
      printf("I am switch: printing my config and searching for next hop... \n");
@@ -37,7 +36,7 @@ void switch_init(switch_state *s, tw_lp *lp)
     s->num_packets_recvd = 0;
     // for now hardcode path for testing
 
-    switch_init_config(s, lp);
+    switch_init_config(s, lp, "/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/second_subgraph/102.yaml");
 }
 
 void switch_prerun(switch_state *s, tw_lp *lp)

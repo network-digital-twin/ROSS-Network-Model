@@ -20,7 +20,6 @@ config *parseConfigFile(char *path, int id)
     int lineInGroup = 0;
     int currentGroup = 0;
     route *routes = NULL;
-    int numRoutes = 0;
     int maxDestId = 0;
     char *dest;
     char *nextHop;
@@ -38,7 +37,7 @@ config *parseConfigFile(char *path, int id)
     int start;
     int colPos;
 
-    config *conf = (config *)malloc(sizeof(config));
+    config *conf = (config*)malloc(sizeof(config));
     conf->id = id;
 
     fptr = fopen(path, "r");
@@ -50,15 +49,23 @@ config *parseConfigFile(char *path, int id)
 
     while ((read = getline(&line, &len, fptr)) != -1)
     {
+        line[strcspn(line, "\n")] = 0; // stripping new line
         // this will run on "top level" segments i.e., ports, routing, type etc...
         if (line[0] != ' ')
         {
+            char* word = strtok(line, ":");
+
             if (currentSegment != NULL){
                 free(currentSegment);
             }
 
-            currentSegment = getNameSegment(line);
+            copy_word_with_null_tem(&currentSegment, word);
+
             lineInSeg = -1; // still on the top level line
+        }else{
+            // removing all spaces to make parsing with strtok(line,":") easier
+            // THIS HAS TO HAPPEN AFTER WE ENTER A SEGMENT CAUSE THE CHECK FOR ENTERING A SEGMENT RELIES ON SPACES
+            remove_spaces(line);
         }
 
         // these will run for every line in that "top level segment"
@@ -71,15 +78,25 @@ config *parseConfigFile(char *path, int id)
                 lineInSeg++; // skip to the first data line
                 conf->ports = (port *)malloc(sizeof(port));
                 conf->numPorts = 0;
+
+                while (strtok(NULL, ":") != NULL);
             }
             else // for every line that contains actual port data
             {
                 conf->ports = realloc(conf->ports, (lineInSeg + 1) * sizeof(port));
 
-                parsePort(line, conf->ports, lineInSeg);
+                char* word = strtok(line, ":");
+                copy_word_with_null_tem(&conf->ports[lineInSeg].name, word);
+
+                word = strtok(NULL, ":");
+                conf->ports[lineInSeg].bandwidth = atof(word);
+
+                conf->ports[lineInSeg].id = lineInSeg;
 
                 conf->numPorts++;
                 lineInSeg++;
+
+                while (strtok(NULL, ":") != NULL);
             }
         }
         else if (strcmp(currentSegment, "routing") == 0)
@@ -105,6 +122,8 @@ config *parseConfigFile(char *path, int id)
                 lineInSeg++; // skip to the first data line
                 lineInGroup = 0;
                 routes = (route *)malloc(0);
+
+                while (strtok(NULL, ":") != NULL);
             }
             else
             {
@@ -112,22 +131,14 @@ config *parseConfigFile(char *path, int id)
                 {
                     routes = realloc(routes, (currentGroup + 1) * sizeof(route));
 
-                    /*
-                      in the first line of the subgroup we get the dest node | dest:\n
-                    */
+                    char* word = strtok(line, ":");
+                    routes[currentGroup].dest = atoi(word);
 
-                    start = getStartLocation(line);
-
-                    dest = (char *)malloc(strlen(line) - start - 2);       // skipping : and new_line
-                    strncpy(dest, line + start, strlen(line) - start - 2); // as above
-
-                    routes[currentGroup].dest = atoi(dest);
-
-                    // find max dest id
                     if (routes[currentGroup].dest > maxDestId)
                         maxDestId = routes[currentGroup].dest;
 
-                    free(dest);
+                    while (strtok(NULL, ":") != NULL);
+
                     lineInGroup++;
                 }
                 else if (lineInGroup == 1)
@@ -135,14 +146,11 @@ config *parseConfigFile(char *path, int id)
                     /*
                         in the second line of the subgroup get the next hop node | \t next_hop: neighbour_id
                     */
-                    colPos = getColLocation(line);
+                    strtok(line, ":");
+                    char* word = strtok(NULL,":");
+                    routes[currentGroup].nextHop = atoi(word);
 
-                    nextHop = (char *)malloc(strlen(line) - colPos - 3); // -3 cause -> ':', space and new_line
-                    strncpy(nextHop, line + colPos + 2, strlen(line) - colPos - 3);
-
-                    routes[currentGroup].nextHop = atoi(nextHop);
-
-                    free(nextHop);
+                    while (strtok(NULL, ":") != NULL);
 
                     lineInGroup++;
                 }
@@ -151,44 +159,43 @@ config *parseConfigFile(char *path, int id)
                     /*
                         on the third line of the subgroup get the port name | port: port_name
                     */
-                    line[strcspn(line, "\n")] = 0; // stripping new line
 
-                    char* word = strtok(line, ":");
-                    int col = 0;
-                    while (word != NULL)
-                    {
-                        if (col == 1){
-                            routes[currentGroup].portName = (char *)malloc(strlen(word)-1); // -3 cause -> ':', space and new_line
-                            memset(routes[currentGroup].portName, 0, strlen(word)-1);
-                            strncpy(routes[currentGroup].portName, word+1, strlen(word)-1);
-                        }
-                        word = strtok(NULL, ":");
-                        col += 1;
-                    }
+                    strtok(line, ":");
+                    char* word = strtok(NULL, ":");
+
+                    copy_word_with_null_tem(&routes[currentGroup].portName, word);
+
+                    while (strtok(NULL, ":") != NULL);
 
                     lineInGroup = 0;
                     currentGroup++;
-                    numRoutes = currentGroup;
                 }
             }
         }
         else if (strcmp(currentSegment, "type") == 0)
         {
-            typeStart = strlen(currentSegment) + 2;
-            typeSize = strlen(line) - typeStart - 1;
+            char* type = strtok(NULL, ":");
+            remove_spaces(type);
+            copy_word_with_null_tem(&conf->type, type);
 
-            conf->type = (char *)malloc(typeSize);
-
-            strncpy(conf->type, line + typeStart, typeSize);
+            while (strtok(NULL, ":") != NULL);
         }
     }
 
     fclose(fptr);
 
     // populate the routing table using the 'bucket' list data struct
+    conf->routingTableSize = maxDestId + 1;
+    conf->routing = (route *)malloc(conf->routingTableSize * sizeof(route));
 
-    conf->routing = (route *)malloc(maxDestId * sizeof(route));
-    conf->routingTableSize = maxDestId;
+    route null_route;
+    null_route.portName = NULL;
+    null_route.nextHop = -1;
+    null_route.dest = -1;
+
+    for (int i=0; i<conf->routingTableSize; i++){
+        conf->routing[i] = null_route;
+    }
 
     for (int i = 0; i < currentGroup; i++)
     {
@@ -198,42 +205,19 @@ config *parseConfigFile(char *path, int id)
     return conf;
 }
 
-char* getNameSegment(char *line)
-{
-    int colLoc = getColLocation(line);
-    char *segName = (char *)malloc(colLoc);
-    strncpy(segName, line, colLoc);
-    segName[colLoc] = '\0';
-
-    return segName;
+void remove_spaces(char* s) {
+    char* d = s;
+    do {
+        while (*d == ' ') {
+            ++d;
+        }
+    } while (*s++ = *d++);
 }
 
-void parsePort(char *line, port *portList, int curIndex)
-{
-    port *temp;
-    temp = (port*) malloc(sizeof(port));
-    int colPos = getColLocation(line);
-    int start = getStartLocation(line);
-
-    temp->id = curIndex;
-
-    // get port name
-    temp->name = (char *)malloc(colPos-2);
-    memset(temp->name, 0, colPos-2);
-    strncpy(temp->name, line + start, colPos-2);
-
-    // get port bw
-    int bwStart = colPos + 2;                // skiping ": "
-    int bwSize = strlen(line) - bwStart - 2; // skipping new line
-
-    char *bw = (char *)malloc(bwSize);
-    strncpy(bw, line + bwStart, bwSize);
-
-    temp->bandwidth = strtod(bw, NULL);
-
-    portList[curIndex] = *temp;
-
-    free(bw);
+void copy_word_with_null_tem(char** dest, char* word){
+    *dest = malloc(strlen(word)+1);
+    memset(*dest, 0, strlen(word)+1);
+    strncpy(*dest, word, strlen(word));
 }
 
 double getPortBandwidth(config *conf, char *portName)
@@ -264,8 +248,9 @@ void printConfig(config *conf)
     }
     printf("\tRouting Table: \n");
     printf("\t\t%d records! showing first 20 that are not NULL...\n", conf->routingTableSize);
-    while (cnt < 20 || i <= conf->routingTableSize - 1)
+    while (cnt < 20 && i < conf->routingTableSize)
     {
+        //printf("%d, %d \n", cnt, i);
         if (conf->routing[i].portName != NULL)
         {
             printf("\t\tdest: %d | next hop: %d | port: %s \n", conf->routing[i].dest, conf->routing[i].nextHop, conf->routing[i].portName);
@@ -276,32 +261,6 @@ void printConfig(config *conf)
     printf("--------------------\n");
 }
 
-int getColLocation(char *s)
-{
-    int colPos = -1;
-    for (int i = 0; i < strlen(s); i++)
-    {
-        if (s[i] == ':')
-        {
-            colPos = i;
-            break;
-        }
-    }
-    return colPos;
-}
-
-int getStartLocation(char *s)
-{
-    int start = 0;
-    for (int i = 0; i < strlen(s); i++)
-    {
-        if (s[i] == ' ')
-            start += 1;
-        else
-            break;
-    }
-    return start;
-}
 
 void freeConfig(config *conf)
 {

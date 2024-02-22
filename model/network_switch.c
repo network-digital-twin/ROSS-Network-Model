@@ -13,18 +13,18 @@
 
 //-------------Switch stuff-------------
 
-void switch_init_config(switch_state *s, tw_lp *lp, char* path)
+void switch_init_config(switch_state *s, tw_lp *lp, char* path, int id)
 {
-    s->conf = parseConfigFile(path, 5);
+    s->conf = parseConfigFile(path, id);
 
      printf("----------------------------------------------------\n");
      // some prints for validation
      printf("I am switch: printing my config and searching for next hop... \n");
      printConfig(s->conf);
-     char *nextPort = getNextHopPort(s->conf, 11);
-     printf("Next hop for dest node 11 is: %s\n", nextPort);
-     printf("Looking for its BW: %f \n", getPortBandwidth(s->conf, nextPort));
-     printf("----------------------------------------------------\n");
+//     char *nextPort = getNextHopPort(s->conf, 0);
+//     printf("Next hop for dest node 11 is: %s\n", nextPort);
+//     printf("Looking for its BW: %f \n", getPortBandwidth(s->conf, nextPort));
+//     printf("----------------------------------------------------\n");
      printf("----------------------------------------------------\n");
 }
 
@@ -36,7 +36,13 @@ void switch_init(switch_state *s, tw_lp *lp)
     s->num_packets_recvd = 0;
     // for now hardcode path for testing
 
-    switch_init_config(s, lp, "/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/second_subgraph/102.yaml");
+    for (int i=0; i<100; i++){
+        char* path = "/home/lenovo/Documents/GitHub/ROSS-Network-Model/model/data/final_topology_0/";
+        char* config;
+        sprintf(config, "%s%d.yaml", path,i);
+        switch_init_config(s, lp, config, i);
+    }
+
 }
 
 void switch_prerun(switch_state *s, tw_lp *lp)

@@ -42,16 +42,17 @@ void switch_init_config(switch_state *s, tw_lp *lp)
 
 void switch_init (switch_state *s, tw_lp *lp)
 {
-    //switch_init_config(s, lp);
+    switch_init_config(s, lp);
     s->num_qos_levels = NUM_QOS_LEVEL;  // TODO: load dynamically from file
+    const int num_qos_levels = s->num_qos_levels;
     switch_init_stats(s, lp);
 
     tw_lpid self = lp->gid;
-    int num_ports = NUM_TO_SWITCH_PORTS;  // TODO: load it from a file
+    int num_ports = s->conf->numPorts;
 
     // init state data
-    s->num_queues = NUM_QOS_LEVEL * num_ports;
-    s->num_meters = NUM_QOS_LEVEL * num_ports;
+    s->num_queues = num_qos_levels * num_ports;
+    s->num_meters = num_qos_levels * num_ports;
     s->num_schedulers = num_ports;
     s->num_shapers = num_ports;
     s->num_ports = num_ports;
@@ -59,28 +60,16 @@ void switch_init (switch_state *s, tw_lp *lp)
     s->propagation_delays = (double *)malloc(sizeof(double) * s->num_ports);
     s->ports_available_time = (double *)malloc(sizeof(double) * s->num_ports);
     for(int i = 0; i < s->num_ports; i++) {
-        s->bandwidths[i] = BANDWIDTH;
+        s->bandwidths[i] = s->conf->ports[i].bandwidth;
         s->propagation_delays[i] = PROPAGATION_DELAY;
         s->ports_available_time[i] = 0;
     }
 
     /* Init routing table */
-    // HARD CODED FOR 3 SWITCHES!
-    // TODO: load it dynamically!
+    // TODO: tidy the code, now there are too much redundancy.
     assert(total_switches == 3);
     s->routing_table_size = total_switches; // number of records in the routing table
-    s->routing = (route *)malloc(sizeof(route) * s->routing_table_size);
-    int port_id = 0;
-    for(int i = 0; i < s->routing_table_size; i++) {
-        if(i == self) {
-            s->routing[i].nextHop = -1;
-            s->routing[i].port_id = -1;
-        } else {
-            s->routing[i].nextHop = i;
-            s->routing[i].port_id = port_id;
-            port_id++;
-        }
-    }
+    s->routing = s->conf->routing;
 
 
     /* Init meters */
@@ -108,8 +97,8 @@ void switch_init (switch_state *s, tw_lp *lp)
     s->scheduler_list = (sp_scheduler *)malloc(sizeof(sp_scheduler) * s->num_schedulers);
     int offset = 0;
     for(int i = 0; i < s->num_schedulers; i++) {
-        sp_init(&(s->scheduler_list[i]), &(s->qos_queue_list[offset]), NUM_QOS_LEVEL, &(s->shaper_list[i]));
-        offset += NUM_QOS_LEVEL;
+        sp_init(&(s->scheduler_list[i]), &(s->qos_queue_list[offset]), num_qos_levels, &(s->shaper_list[i]));
+        offset += num_qos_levels;
     }
 
     /* Init flags of ports to 0s */
@@ -163,14 +152,13 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     }
 
     // Else, you need to route it to another switch
-    // TODO: Look up the routing table to get out_port and next_hop
     out_port = s->routing[final_dest].port_id;
     next_hop = s->routing[final_dest].nextHop;
 
 
     /* ------- CLASSIFIER ------- */
     // Classify the packet into the correct meter: get the correct meter index
-    int meter_index = out_port * NUM_QOS_LEVEL + in_msg->packet.type;  // TODO: use a function to wrap this calculation
+    int meter_index = out_port * s->num_qos_levels + in_msg->packet.type;  // TODO: use a function to wrap this calculation
     in_msg->qos_state_snapshot.meter_index = meter_index;  // save the meter index for reverse computation
 
     /*------- METER -------*/

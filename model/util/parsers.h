@@ -29,7 +29,7 @@ typedef struct config
     port *ports; // To-switch port list
     int numPorts; // number of to-switch ports
     route *routing;  // Routing table
-    int routingTableSize; // number of records in the routing table
+    int routingTableSize;
 } config;
 
 // workload structs
@@ -69,6 +69,7 @@ extern config *parseConfigFile(char *path, int id);
 extern void printConfig(config *conf);
 extern double getPortBandwidth(config *conf, char *portName);
 extern char *getNextHopPort(config *conf, int dest);
+extern int getPortIDByName(config *conf, char *portName);
 
 /* 
     WORKLOAD

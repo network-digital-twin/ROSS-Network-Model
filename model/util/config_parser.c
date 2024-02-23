@@ -184,6 +184,11 @@ config *parseConfigFile(char *path, int id)
 
     fclose(fptr);
 
+    // populate the port_id field of the route struct
+    for(int i=0; i<currentGroup; i++){
+        routes[i].port_id = getPortIDByName(conf, routes[i].portName);
+    }
+
     // populate the routing table using the 'bucket' list data struct
     conf->routingTableSize = maxDestId + 1;
     conf->routing = (route *)malloc(conf->routingTableSize * sizeof(route));
@@ -192,6 +197,7 @@ config *parseConfigFile(char *path, int id)
     null_route.portName = NULL;
     null_route.nextHop = -1;
     null_route.dest = -1;
+    null_route.port_id = -1;
 
     for (int i=0; i<conf->routingTableSize; i++){
         conf->routing[i] = null_route;
@@ -218,6 +224,16 @@ void copy_word_with_null_tem(char** dest, char* word){
     *dest = malloc(strlen(word)+1);
     memset(*dest, 0, strlen(word)+1);
     strncpy(*dest, word, strlen(word));
+}
+
+int getPortIDByName(config *conf, char *portName)
+{
+    for (int i = 0; i < conf->numPorts; i++)
+    {
+        if (strcmp(conf->ports[i].name, portName) == 0)
+            return conf->ports[i].id;
+    }
+    return -1;
 }
 
 double getPortBandwidth(config *conf, char *portName)
@@ -253,7 +269,7 @@ void printConfig(config *conf)
         //printf("%d, %d \n", cnt, i);
         if (conf->routing[i].portName != NULL)
         {
-            printf("\t\tdest: %d | next hop: %d | port: %s \n", conf->routing[i].dest, conf->routing[i].nextHop, conf->routing[i].portName);
+            printf("\t\tdest: %d | next hop: %d | port: %s | port_id: %d\n", conf->routing[i].dest, conf->routing[i].nextHop, conf->routing[i].portName, conf->routing[i].port_id);
             cnt++;
         }
         i++;

@@ -61,8 +61,12 @@ void print_switch_stats(const switch_state *s, tw_lp *lp) {
 
 void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the statistics to a file
     char str[150];
+    char str_header[150];
     strcpy(str, out_dir);
     strcat(str, "/received.csv");
+    strcpy(str_header, out_dir);
+    strcat(str_header, "/received_header.txt");
+
     FILE *fptr;
     fptr = fopen(str, "a");
 
@@ -72,9 +76,12 @@ void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the 
         exit(-1);
     }
 
-//    if(lp->gid == 0) {
-//        fprintf(fptr, "src, dest, qos, avg_delay, jitter, pkt_received\n");
-//    }
+    if(lp->gid == 0) {
+        FILE *fptr_header;
+        fptr_header = fopen(str_header, "w");
+        fprintf(fptr_header, "src, dest, qos, avg_delay, jitter, pkt_received\n");
+        fclose(fptr_header);
+    }
     for (int i = 0; i < total_switches; ++i) {
         for (int q = 0; q < s->num_qos_levels; ++q) {
             if(s->stats->count[i][q] > 0) {

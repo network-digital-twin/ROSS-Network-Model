@@ -57,10 +57,12 @@ typedef struct packets
 */
 
 // parsing
-extern char* getNameSegment(char *line);
+extern char* getNameSegment(char* curSeg, char *line);
 extern void parsePort(char *line, port *portList, int curIndex);
 extern int getColLocation(char *s);
 extern int getStartLocation(char *s);
+void remove_spaces(char* s);
+void copy_word_with_null_tem(char** dest, char* word);
 
 // functionalities
 extern config *parseConfigFile(char *path, int id);

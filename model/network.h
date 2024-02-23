@@ -7,6 +7,7 @@
 #define NUM_QOS_LEVEL 3
 
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
+#define MAX_RECORDS 10 // 10 billion records to store statistics in a switch
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
 // #define MEAN_SWITCH_PROCESS_WAIT 45.0
@@ -18,6 +19,7 @@
 // ===================================
 
 typedef struct {
+    unsigned long long pid;  // packet ID
     tw_stime send_time; // Initial time when the packet is generated
     tw_lpid src; // Source switch
     tw_lpid dest; // Final destination switch
@@ -194,11 +196,20 @@ typedef struct {
 } terminal_state;
 
 typedef struct {
-    int num_packets_sent;
-    int num_packets_recvd;
-    double **total_delay;   // [src switch][priority] in ns
-    double **jitter;  // [src switch][priority]
-    int **count;  // number of received packets [src switch][priority]
+    unsigned long pid;  // packet ID
+    double delay; // delay of this packet in ns
+    signed char drop;  // 1 for dropped, 0 for not dropped
+} record;
+
+typedef struct {
+    unsigned long long num_packets_dropped;  // the packet dropped in this switch
+    unsigned long long num_packets_recvd; // the packet whose final dest is this switch
+    record *records;
+    unsigned long long records_capacity; // the max number of record the `records` can contain.
+
+//    double **total_delay;   // [src switch][priority] in ns
+//    double **jitter;  // [src switch][priority]
+//    int **count;  // number of received packets [src switch][priority]
 } stats;  // stats of the switch
 
 typedef struct {
@@ -243,7 +254,8 @@ extern void print_switch_stats(const switch_state *s, tw_lp *lp);
 extern void switch_init_stats(switch_state *s, tw_lp *lp);
 extern void switch_free_stats(switch_state *s);
 extern void write_switch_stats_to_file(const switch_state *s, tw_lp *lp);
-
+extern void switch_update_stats(stats *st, unsigned long pid, double delay, signed char drop);
+extern void switch_update_stats_reverse(stats *st);
 
 //DRIVER -----------------------------
 

@@ -16,7 +16,8 @@
 
 //--------------Terminal stuff-------------
 
-static void write_terminal_stats_to_file(int ***count);
+static void write_terminal_stats_to_file(unsigned long long ***count);
+static unsigned long long get_max_num_packets_for_a_switch(unsigned long long ***count);
 
 void terminal_parse_workload(terminal_state *s, tw_lp *lp)
 {
@@ -51,11 +52,11 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
     tw_stime ts;
 
      // [src][dest][priority]
-    int ***count = (int ***)malloc(sizeof(int **) * total_switches); // TODO: this is not memory efficient!
+    unsigned long long ***count = (unsigned long long ***)malloc(sizeof(unsigned long long **) * total_switches); // TODO: this is not memory efficient!
     for(int i = 0; i < total_switches; i++) {
-        count[i] = (int **)malloc(sizeof(int *) * total_switches);
+        count[i] = (unsigned long long **)malloc(sizeof(unsigned long long *) * total_switches);
         for(int j = 0; j < total_switches; j++) {
-            count[i][j] = (int *)malloc(sizeof(int) * NUM_QOS_LEVEL);
+            count[i][j] = (unsigned long long *)malloc(sizeof(unsigned long long) * NUM_QOS_LEVEL);
             for(int k = 0; k < NUM_QOS_LEVEL; k++) {
                 count[i][j][k] = 0;
             }
@@ -76,6 +77,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
 
         tw_event *e = tw_event_new(src, ts, lp);
         tw_message *out_msg = tw_event_data(e);
+        out_msg->packet.pid = s->pks.pks[i].id;
         out_msg->packet.send_time = s->pks.pks[i].timestamp;
         out_msg->packet.src = src;
         out_msg->packet.dest = dest;
@@ -94,6 +96,21 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
     }
     printf("Schedule done\n");
 
+    unsigned long long max = get_max_num_packets_for_a_switch(count);
+    printf("Max number of packets that is sent to one switch: %llu\n", max);
+    if(max > MAX_RECORDS) {
+        printf("----------------------------------------------------\n");
+        printf("----------------------------------------------------\n");
+        printf("Please consider increase the macro MAX_RECORDS, which now is: %llu\n", MAX_RECORDS);
+        printf("Because the max number of packets that a switch can receive is %llu\n", max);
+        printf("We use MAX_RECORDES to specify the allocated memory size of each switch to store the statistics\n");
+        printf("With small MAX_RECORDS, realloc will be called repeatedly when there is not enough memory to store the statistics\n");
+        printf("BUT realloc IS TIME CONSUMING!\n");
+        printf("----------------------------------------------------\n");
+        printf("----------------------------------------------------\n");
+
+    }
+
     write_terminal_stats_to_file(count);
 
     // Free int ***count
@@ -109,7 +126,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
     // printf("%d: I am a terminal assigned to PO %llu\n",self,assigned_switch);
 }
 
-static void write_terminal_stats_to_file(int ***count) {// Write the statistics to a file
+static void write_terminal_stats_to_file(unsigned long long ***count) {// Write the statistics to a file
     char str[150];
     puts(out_dir);
     strcpy(str, out_dir);
@@ -126,7 +143,7 @@ static void write_terminal_stats_to_file(int ***count) {// Write the statistics 
             for(int k = 0; k < NUM_QOS_LEVEL; k++) {
                 if(count[i][j][k] > 0) {
                     if(fptr != NULL) {
-                        fprintf(fptr, "%d,%d,%d,%d\n", i, j, k, count[i][j][k]);
+                        fprintf(fptr, "%d,%d,%d,%llu\n", i, j, k, count[i][j][k]);
                     }
                 }
             }
@@ -139,6 +156,23 @@ static void write_terminal_stats_to_file(int ***count) {// Write the statistics 
 void terminal_final(terminal_state *s, tw_lp *lp)
 {
     int self = lp->gid;
-    printf("Terminal %d: S:%d messages\n", self, s->num_packets_sent);
+    printf("Terminal %d: S:%d packets\n", self, s->num_packets_sent);
 }
 
+// Calculate what is the maximum number of packets that a switch can receive as the final destination.
+static unsigned long long get_max_num_packets_for_a_switch(unsigned long long ***count) {
+    unsigned long long max = 0;
+    unsigned long long tmp;
+    for(int i = 0; i < total_switches; i++) {
+        for(int j = 0; j < total_switches; j++) {
+            tmp = 0;
+            for(int k = 0; k < NUM_QOS_LEVEL; k++) {
+                tmp += count[i][j][k];
+            }
+            if(tmp > max) {
+                max = tmp;
+            }
+        }
+    }
+    return max;
+}

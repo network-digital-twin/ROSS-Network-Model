@@ -144,9 +144,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 //        assert(ts >0);
 
         // Update statistics
-        s->stats->num_packets_recvd++;
-        s->stats->count[in_msg->packet.src][in_msg->packet.type]++;
-        s->stats->total_delay[in_msg->packet.src][in_msg->packet.type] += ts_now - in_msg->packet.send_time;
+        switch_update_stats(s->stats, in_msg->packet.pid, ts_now - in_msg->packet.send_time, 0);
         ///////////////////// STATE CHANGE
         return;
     }
@@ -177,6 +175,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     queue_t *queue = &s->qos_queue_list[queue_index];
     if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
+        switch_update_stats(s->stats, in_msg->packet.pid, 0, 1);
 #ifdef DEBUG
 
         if(self==0) {
@@ -278,9 +277,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
 
     // Final hop
     if (bf->c0) {
-        s->stats->num_packets_recvd--;
-        s->stats->count[in_msg->packet.src][in_msg->packet.type]--;
-        s->stats->total_delay[in_msg->packet.src][in_msg->packet.type] -= (tw_now(lp) - in_msg->packet.send_time);
+        switch_update_stats_reverse(s->stats);
         return;
     }
 
@@ -290,6 +287,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
 
     // Packet dropped
     if (bf->c1) {
+        switch_update_stats_reverse(s->stats);
         return;
     }
 
@@ -511,7 +509,7 @@ void switch_final(switch_state *s, tw_lp *lp)
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-    printf("Switch %llu: Receive:%d\n", self, s->stats->num_packets_recvd);
+    printf("Switch %llu: Receive:%llu\n", self, s->stats->num_packets_recvd);
     print_switch_stats(s, lp);
     write_switch_stats_to_file(s, lp);
     switch_free_stats(s);

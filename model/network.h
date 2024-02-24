@@ -53,6 +53,12 @@ typedef struct {
     tw_stime last_update_time;
 } token_bucket_state;
 
+// QOS DROPPER STATE -------------------
+typedef struct {
+    double avg;
+    tw_stime q_time;
+} REDdropper_state;
+
 // QOS FULL STATE ---------------------
 typedef struct {
     int meter_index;
@@ -60,6 +66,7 @@ typedef struct {
     srTCM_state meter_state;
     sp_scheduler_state scheduler_state;
     token_bucket_state shaper_state;
+    REDdropper_state dropper_state;
     tw_stime port_available_time_rc; // For reverse computation: the next available time of a port
 } qos_state_rc; // snapshot of full state of QoS modules that are useful for reverse computation
 
@@ -111,6 +118,16 @@ typedef struct token_bucket {
     double port_bandwidth;  // Gbps. The bandwidth of the port that the bucket is attached to.
     tw_stime last_update_time;
 } token_bucket;
+
+typedef struct REDdropper {
+    double minth;  // minimum threshold
+    double maxth;  // maximum threshold
+    double maxp;  // maximum probability
+    double wq;  // weights for calculating average queue length
+    double avg;  // average queue length
+    double q_time; // in ns
+    queue_t *queue;  // pointer to the queue that the dropper is attached to
+} REDdropper;
 
 // QOS SCHEDULER STRUCTS -----------------------------
 typedef struct {
@@ -181,7 +198,11 @@ int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time);
 void srTCM_update_reverse(srTCM *meter, const srTCM_state *meter_state);
 void srTCM_snapshot(const srTCM *meter, srTCM_state* state);
 
-
+// QOS DROPPER FUNCTIONS -----------------------------
+void REDdropper_init(REDdropper *dropper, double minth, double maxth, double maxp, double wq, queue_t* queue);
+int REDdropper_update(REDdropper *dropper, tw_stime current_time);
+void REDdropper_snapshot(REDdropper *dropper, REDdropper_state *state);
+void REDdropper_update_reverse(REDdropper *dropper, REDdropper_state *state);
 
 // ===================================
 // LP
@@ -222,6 +243,7 @@ typedef struct {
      sp_scheduler *scheduler_list;
      int num_shapers;
      token_bucket *shaper_list;
+    REDdropper *dropper_list;
      // Ports
      int num_ports;  // number of ports that connect to switches (not to terminals)
      int *port_flags;
@@ -286,5 +308,8 @@ extern char *trace_path;
 extern char *route_dir_path;
 extern char *home_dir; //used for output directory
 extern char *out_dir; //output dir
+
+extern double yellow_dropper_maxth;
+extern double green_dropper_maxth;
 
 #endif

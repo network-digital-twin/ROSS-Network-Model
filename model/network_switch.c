@@ -85,6 +85,13 @@ void switch_init (switch_state *s, tw_lp *lp)
         queue_init(&(s->qos_queue_list[i]), QOS_QUEUE_CAPACITY);
     }
 
+    /* Init droppers */ // Each meter has two droppers
+    s->dropper_list = (REDdropper *)malloc(sizeof(REDdropper) * s->num_queues * 2);
+    for(int i = 0; i < s->num_queues; i++) {
+        REDdropper_init(&(s->dropper_list[i * 2]), 0, yellow_dropper_maxth, 0, 0.002, &s->qos_queue_list[i]);
+        REDdropper_init(&(s->dropper_list[i * 2 + 1]), 0, green_dropper_maxth, 0, 0.002, &s->qos_queue_list[i]);
+    }
+
     /* Init shapers */
     s->shaper_list = (token_bucket *)malloc(sizeof(token_bucket) * s->num_shapers);
     for(int i = 0; i < s->num_shapers; i++) {
@@ -168,28 +175,39 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     ///////////////////// STATE CHANGE
 
 
-    /*------- DROPPER and QUEUE -------*/
-    // Use a dropper to drop the packet if it is red or the queue is full.
-    // Otherwise, put the packet into the corresponding queue
+    /*------- DROPPER -------*/
+    // Use a dropper to decide whether to drop the packet.
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
-    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
-        bf->c1 = 1;  // use the bit field to record the "if" branch
-        switch_update_stats(s->stats, in_msg->packet.pid, 0, 1);
-#ifdef DEBUG
+    int drop;
 
-        if(self==0) {
-            printf("Packet dropped at switch %llu\n", self);
-        }
-#endif
+    if(color == COLOR_RED) {
+        drop = 1;
+    } else if(color == COLOR_YELLOW) {
+        bf->c5 = 1; // use the bit field to record the "if" branch
+        REDdropper *dropper = &s->dropper_list[meter_index * 2];
+        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);
+        drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
+    } else if(color == COLOR_GREEN) {
+        bf->c6 = 1; // use the bit field to record the "if" branch
+        REDdropper *dropper = &s->dropper_list[meter_index * 2 + 1];
+        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);
+        drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
+    } else {
+        printf("ERROR: Unknown color\n");
+        exit(-1);
+    }
+
+    /* ------- QUEUE -------*/
+    if(drop) {
+        bf->c1 = 1;  // use the bit field to record the "if" branch
+        switch_update_stats(s->stats, in_msg->packet.pid, 0, 1);   ///////////////////// STATE CHANGE
         return;
     } else {
         // enqueue the node and modify the routing info of the enqueued node
         ///////////////////// STATE CHANGE
         node_t *enqueued_node = queue_put(queue, in_msg);
         enqueued_node->data.next_hop = next_hop;
-//        printf("[%llu][%f] queue_address %x, queue_size %d\n", self, tw_now(lp), queue, queue->num_packets);
-
     }
 
     /* ------- DECIDE TO SEND a packet NOW OR IN THE FUTURE -------*/
@@ -284,6 +302,13 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
     /* ------- METER ------- */
     int meter_index = in_msg->qos_state_snapshot.meter_index;
     srTCM_update_reverse(&s->meter_list[meter_index], &in_msg->qos_state_snapshot.meter_state);
+
+    /* ------- DROPPER --------*/
+    if (bf->c5) {
+        REDdropper_update_reverse(&s->dropper_list[meter_index * 2], &in_msg->qos_state_snapshot.dropper_state);
+    } else if (bf->c6) {
+        REDdropper_update_reverse(&s->dropper_list[meter_index * 2 + 1], &in_msg->qos_state_snapshot.dropper_state);
+    }
 
     // Packet dropped
     if (bf->c1) {

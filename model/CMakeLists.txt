@@ -30,6 +30,7 @@ SET(network_srcs
 		util/workload_parser.c
 		util/config_parser.c
 		util/stats.c
+		qos/REDdropper.c
 )
 
 

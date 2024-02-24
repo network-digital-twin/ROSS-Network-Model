@@ -40,11 +40,19 @@ char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
+double yellow_dropper_maxth = 50;
+double green_dropper_maxth = 90;
+
 
 //Command line opts
 const tw_optdef model_opts[] = {
         TWOPT_GROUP("Network Model"),
         TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
+        TWOPT_UINT("yellow-maxth", yellow_dropper_maxth, "The maxth of the yellow REDdropper"),
+        TWOPT_UINT("green-maxth", green_dropper_maxth, "The maxth of the green REDdropper"),
+        TWOPT_CHAR("trace-path", trace_path, "Path to the trace file"),
+        TWOPT_CHAR("model-home", home_dir, "Path to the home directory of the model, used for determine output paths"),
+        TWOPT_CHAR("route-dir-path", route_dir_path, "Path to the routing directory"),
         TWOPT_END()
 };
 

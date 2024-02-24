@@ -34,7 +34,7 @@ void queue_destroy(queue_t *queue) {
  * @return pointer to the newly enqueued node
  */
 node_t *queue_append_to_tail(queue_t *queue, const tw_message *msg) {
-    assert(queue->size_in_bytes + msg->packet.size_in_bytes < queue->max_size_in_bytes);
+    assert(queue->size_in_bytes + msg->packet.size_in_bytes <= queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
     new_node->data = msg->packet;  // Copy the value that the pointer msg points to
@@ -83,7 +83,7 @@ node_t *queue_return_from_tail(queue_t *queue) {
  * @param msg the struct 'msg' internally must not contain any pointers
  */
 void queue_append_to_head(queue_t *queue, const packet *pkt) {
-    assert(queue->size_in_bytes + pkt->size_in_bytes < queue->max_size_in_bytes);
+    assert(queue->size_in_bytes + pkt->size_in_bytes <= queue->max_size_in_bytes);
 
     node_t *new_node = malloc(sizeof(node_t));
     new_node->data = *pkt;  // Copy the value that the pointer msg points to

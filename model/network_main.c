@@ -34,14 +34,18 @@ tw_lptype model_lps[] =
 //Define command line arguments default values
 int total_terminals= 1;
 int total_switches = 3;
+//int total_switches = 5237;
+
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
 char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
+//char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:125000000__SIMULATION_TIME:1000000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:50000__PACKET_SIZE:1400__BANDWIDTH:125000000__PRIO_LEVELS:3";
+//char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
-double yellow_dropper_maxth = 50;
-double green_dropper_maxth = 90;
+double yellow_dropper_maxth = 1;
+double green_dropper_maxth = 1;
 
 
 //Command line opts
@@ -134,7 +138,7 @@ int network_main(int argc, char** argv, char **env)
             sleep(5);
     }
 #endif
-
+    //g_tw_events_per_pe = 10000000;
 
     //Useful ROSS variables and functions
     // tw_nnodes() : number of nodes/processors defined
@@ -158,7 +162,7 @@ int network_main(int argc, char** argv, char **env)
     num_LPs_per_pe = g_tw_nlp / tw_nnodes();
     g_tw_lookahead = 1;
 
-    assert(total_switches == 3);
+    //assert(total_switches == 3);
 
     displayModelSettings();
 

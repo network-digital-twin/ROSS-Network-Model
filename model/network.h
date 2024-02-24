@@ -7,7 +7,7 @@
 #define NUM_QOS_LEVEL 3
 
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
-#define MAX_RECORDS 10 // 10 billion records to store statistics in a switch
+#define MAX_RECORDS 10000 // 10000 records to store statistics in a switch
 #define MEAN_TERMINAL_WAIT .005
 #define MEAN_SWITCH_PROCESS_WAIT .01
 // #define MEAN_SWITCH_PROCESS_WAIT 45.0
@@ -112,9 +112,9 @@ typedef struct {
 
 // QOS SHAPER STRUCTS -----------------------------
 typedef struct token_bucket {
-    long long capacity;
-    long long tokens; // Current number of tokens
-    long long rate;
+    long long capacity; // in bits
+    long long tokens; // Current number of tokens. 1 token == 1 bit
+    long long rate; // in bps
     double port_bandwidth;  // Gbps. The bandwidth of the port that the bucket is attached to.
     tw_stime last_update_time;
 } token_bucket;
@@ -182,6 +182,7 @@ void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime curr
 void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
 void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
 tw_stime token_bucket_next_available_time(token_bucket *bucket, int packet_size);
+int token_bucket_ready(token_bucket *shaper, int packet_size);
 
 // QOS SCHEDULER FUNCTIONS -----------------------------
 

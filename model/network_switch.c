@@ -10,7 +10,7 @@
 #include <string.h>
 #include <assert.h>
 
-#define QOS_QUEUE_CAPACITY 65536 // 64KiB (in bytes)
+#define QOS_QUEUE_CAPACITY 1400000 // (1400 * 1000) bytes (in bytes)
 #define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
 #define PROPAGATION_DELAY 50000 // 50000ns, switch-to-switch propagation delay
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
@@ -27,14 +27,11 @@ void switch_init_config(switch_state *s, tw_lp *lp)
     printf("%s\n", path);
 
     s->conf = parseConfigFile(path, lp->gid);
-    printf("----------------------------------------------------\n");
+    //printf("----------------------------------------------------\n");
     // some prints for validation
-    printf("I am switch: printing my config and searching for next hop... \n");
-    printConfig(s->conf);
-    //char *nextPort = getNextHopPort(s->conf, 0);
-    //printf("Next hop for dest node 11 is: %s\n", nextPort);
-    //printf("Looking for its BW: %f \n", getPortBandwidth(s->conf, nextPort));
-    printf("----------------------------------------------------\n");
+    //printf("I am switch: printing my config and searching for next hop... \n");
+    //printConfig(s->conf);
+    //printf("----------------------------------------------------\n");
 
     free(path);
 
@@ -67,7 +64,6 @@ void switch_init (switch_state *s, tw_lp *lp)
 
     /* Init routing table */
     // TODO: tidy the code, now there are too much redundancy.
-    assert(total_switches == 3);
     s->routing_table_size = total_switches; // number of records in the routing table
     s->routing = s->conf->routing;
 
@@ -95,7 +91,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     /* Init shapers */
     s->shaper_list = (token_bucket *)malloc(sizeof(token_bucket) * s->num_shapers);
     for(int i = 0; i < s->num_shapers; i++) {
-         token_bucket_init(&(s->shaper_list[i]), 1000*1000*1000, 100*1000*1000, s->bandwidths[i]);
+         token_bucket_init(&(s->shaper_list[i]), 1400*8*3, 1000000, s->bandwidths[i]);
     }
 
     /* Init schedulers */
@@ -181,7 +177,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     queue_t *queue = &s->qos_queue_list[queue_index];
     int drop;
 
-    if(color == COLOR_RED) {
+    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         drop = 1;
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
@@ -216,11 +212,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     in_msg->port_id = out_port;  // save the out_port for reverse computation
 
     token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
-    token_bucket_consume(shaper, NULL, ts_now); ///////// STATE CHANGE
+    token_bucket_consume(shaper, NULL, ts_now); // only update, therefore use NULL ///////// STATE CHANGE
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
 
     // Check whether the shaper has enough token
-    if (next_pkt_size <= shaper->tokens) { // SEND OUT NOW
+    if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
         bf->c2 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to take a packet from the queue
@@ -379,7 +375,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
 
     // Check whether the shaper has enough token
-    if (next_pkt_size <= shaper->tokens) { // SEND OUT NOW
+    if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
         bf->c0 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to dequeue a packet. Need to free the memory later within this function.

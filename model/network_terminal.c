@@ -73,7 +73,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
         if(ts >= g_tw_ts_end) {
             break;
         }
-        printf("To be scheduled at %f\n", ts);
+        //printf("To be scheduled at %f\n", ts);
 
         tw_event *e = tw_event_new(src, ts, lp);
         tw_message *out_msg = tw_event_data(e);

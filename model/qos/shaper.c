@@ -42,6 +42,7 @@ void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime curr
 
     // Let the packet consume the tokens
     bucket->tokens -= packet_size * 8;
+    assert(bucket->tokens >=0);
 
 }
 
@@ -57,7 +58,7 @@ void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state) {
 
 // Calculate the next available time when token is enough
 tw_stime token_bucket_next_available_time(token_bucket *bucket, int packet_size) {
-    if(packet_size <= bucket->tokens) {
+    if(token_bucket_ready(bucket, packet_size)) {
         return bucket->last_update_time;
     } else {
         // The following conversion should not be a problem,
@@ -65,6 +66,15 @@ tw_stime token_bucket_next_available_time(token_bucket *bucket, int packet_size)
         // So abs(1 - bucket->tokens) will not be too large.
         assert(packet_size - bucket->tokens< INT_MAX);
         // Return the time (ns) it takes to accumulate to packet_size token
-        return bucket->last_update_time + (packet_size - bucket->tokens) / bucket->rate * 1000.0 * 1000.0 * 1000.0;;
+        return bucket->last_update_time + (double)(packet_size * 8 - bucket->tokens) / bucket->rate * 1000.0 * 1000.0 * 1000.0;;
+    }
+}
+
+// return 1 for ready, 0 for not ready.
+int token_bucket_ready(token_bucket *shaper, int packet_size) {
+    if (packet_size * 8 <= shaper->tokens) {
+        return 1;
+    } else {
+        return 0;
     }
 }

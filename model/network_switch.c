@@ -10,7 +10,6 @@
 #include <string.h>
 #include <assert.h>
 
-#define QOS_QUEUE_CAPACITY 1400000 // (1400 * 1000) bytes (in bytes)
 #define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
 #define PROPAGATION_DELAY 5000 // 5000ns, switch-to-switch propagation delay
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
@@ -70,7 +69,7 @@ void switch_init (switch_state *s, tw_lp *lp)
 
     /* Init meters */
     s->meter_list = (srTCM *)malloc(sizeof(srTCM) * s->num_meters);
-    params_srTCM params = {.CIR=1000, .CBS=20*1000*1000, .EBS=40*1000*1000, .is_color_aware=0};
+    params_srTCM params = {.CIR=1000, .CBS=srTCM_CBS, .EBS=srTCM_EBS, .is_color_aware=0};
     for(int i = 0; i < s->num_meters; i++) {
         srTCM_init(&(s->meter_list[i]), &params);
     }
@@ -78,7 +77,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     /* Init qos queues */
     s->qos_queue_list = (queue_t *)malloc(sizeof(queue_t) * s->num_queues);
     for(int i = 0; i < s->num_queues; i++) {
-        queue_init(&(s->qos_queue_list[i]), QOS_QUEUE_CAPACITY);
+        queue_init(&(s->qos_queue_list[i]), queue_capacity);
     }
 
     /* Init droppers */ // Each meter has two droppers
@@ -91,7 +90,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     /* Init shapers */
     s->shaper_list = (token_bucket *)malloc(sizeof(token_bucket) * s->num_shapers);
     for(int i = 0; i < s->num_shapers; i++) {
-         token_bucket_init(&(s->shaper_list[i]), 1400*8*100,  s->bandwidths[i], s->bandwidths[i]);
+         token_bucket_init(&(s->shaper_list[i]), 2*1400*8,  s->bandwidths[i], s->bandwidths[i]);
     }
 
     /* Init schedulers */

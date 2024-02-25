@@ -314,5 +314,8 @@ extern char *out_dir; //output dir
 
 extern double yellow_dropper_maxth;
 extern double green_dropper_maxth;
+extern int queue_capacity; // in bytes
+extern int srTCM_CBS;
+extern int srTCM_EBS;
 
 #endif

@@ -38,13 +38,14 @@ int total_switches = 3;
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
 char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
-//char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:125000000__SIMULATION_TIME:1000000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:50000__PACKET_SIZE:1400__BANDWIDTH:125000000__PRIO_LEVELS:3";
-//char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
-double yellow_dropper_maxth = 50;
-double green_dropper_maxth = 90;
+int queue_capacity = 5000000; // 5MB: 3571 packets
+double yellow_dropper_maxth = 2100;
+double green_dropper_maxth = 3200;
+int srTCM_CBS = 2000*8;
+int srTCM_EBS = 3000*8;
 
 
 //Command line opts

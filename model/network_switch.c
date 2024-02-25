@@ -179,7 +179,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int drop;
 
     if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
-        drop = 2;
+        drop = 1;
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];

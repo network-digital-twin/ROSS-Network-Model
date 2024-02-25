@@ -34,7 +34,6 @@ tw_lptype model_lps[] =
 //Define command line arguments default values
 int total_terminals= 1;
 int total_switches = 3;
-//int total_switches = 5237;
 
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
@@ -44,8 +43,8 @@ char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
-double yellow_dropper_maxth = 1;
-double green_dropper_maxth = 1;
+double yellow_dropper_maxth = 50;
+double green_dropper_maxth = 90;
 
 
 //Command line opts
@@ -116,6 +115,9 @@ int create_out_dir() {
     int result = 0;
     if(g_tw_mynode == 0) {
         result = mkdir(str, 0777);
+        strcat(str, "/");
+        strcat(str, "raw");
+        result += mkdir(str, 0777);
     }
     return result;
 }
@@ -124,6 +126,12 @@ int create_out_dir() {
 #define network_main main
 int network_main(int argc, char** argv, char **env)
 {
+    // Re-set parameters here
+    total_switches = 5237;
+    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:125000000__SIMULATION_TIME:100000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:50000__PACKET_SIZE:1400__BANDWIDTH:12500000__PRIO_LEVELS:3";
+    route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
+    g_tw_ts_end = 100.0*1000.0;  // simulation end time
+
 
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);
@@ -138,7 +146,7 @@ int network_main(int argc, char** argv, char **env)
             sleep(5);
     }
 #endif
-    //g_tw_events_per_pe = 10000000;
+    g_tw_events_per_pe = 10000000;
 
     //Useful ROSS variables and functions
     // tw_nnodes() : number of nodes/processors defined
@@ -178,7 +186,6 @@ int network_main(int argc, char** argv, char **env)
     g_tw_lp_types = model_lps;
     tw_lp_setup_types();
 
-    g_tw_ts_end = 10000000000.0;
     printf("simulation end time: %f\n", g_tw_ts_end);
 
     // prepare output directory

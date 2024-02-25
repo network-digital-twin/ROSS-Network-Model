@@ -114,7 +114,7 @@ typedef struct {
 typedef struct token_bucket {
     long long capacity; // in bits
     long long tokens; // Current number of tokens. 1 token == 1 bit
-    long long rate; // in bps
+    double rate; // unit: tokens per nanosecond (Giga tokens per second)
     double port_bandwidth;  // Gbps. The bandwidth of the port that the bucket is attached to.
     tw_stime last_update_time;
 } token_bucket;
@@ -146,7 +146,7 @@ enum {
 };
 
 typedef struct {
-    long long CIR;  // (in bps) committed information rate: token generation rate;
+    double CIR;  // (Unit: Mbps == bits per micro-sec) committed information rate: token generation rate;
     long long CBS;  // (in bits) committed burst size: capacity of bucket C;
     long long EBS;  // (in bits) excess burst size: capacity of bucket E; can be 0;
     int is_color_aware;  // 1 for color-aware mode, 0 for color-blind mode
@@ -177,7 +177,7 @@ void queue_take_reverse(queue_t *queue, const packet *pkt);
 
 // QOS SHAPER FUNCTIONS -----------------------------
 
-void token_bucket_init(token_bucket *bucket, long long capacity, long long rate, double port_bandwidth);
+void token_bucket_init(token_bucket *bucket, long long capacity, double rate, double port_bandwidth);
 void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time);
 void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
 void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
@@ -220,11 +220,13 @@ typedef struct {
 typedef struct {
     unsigned long pid;  // packet ID
     double delay; // delay of this packet in ns
-    signed char drop;  // 1 for dropped, 0 for not dropped
+    unsigned char drop;  // 1 for dropped, 0 for not dropped
 } record;
 
 typedef struct {
     unsigned long long num_packets_dropped;  // the packet dropped in this switch
+    unsigned long long num_packets_sent;  // the packet sent from this switch
+    unsigned long long received; // the packet received by this switch whose final dest is not this switch
     unsigned long long num_packets_recvd; // the packet whose final dest is this switch
     record *records;
     unsigned long long records_capacity; // the max number of record the `records` can contain.
@@ -277,7 +279,7 @@ extern void print_switch_stats(const switch_state *s, tw_lp *lp);
 extern void switch_init_stats(switch_state *s, tw_lp *lp);
 extern void switch_free_stats(switch_state *s);
 extern void write_switch_stats_to_file(const switch_state *s, tw_lp *lp);
-extern void switch_update_stats(stats *st, unsigned long pid, double delay, signed char drop);
+extern void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned char drop);
 extern void switch_update_stats_reverse(stats *st);
 
 //DRIVER -----------------------------

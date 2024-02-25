@@ -12,7 +12,7 @@
 
 #define QOS_QUEUE_CAPACITY 1400000 // (1400 * 1000) bytes (in bytes)
 #define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
-#define PROPAGATION_DELAY 50000 // 50000ns, switch-to-switch propagation delay
+#define PROPAGATION_DELAY 5000 // 5000ns, switch-to-switch propagation delay
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
 #define SWITCH_TO_TERMINAL_BANDWIDTH 100 // 100Gbps (1Gbps = 1000Mbps)
 #define NUM_TO_SWITCH_PORTS 2 // Number of to-switch ports
@@ -57,7 +57,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     s->propagation_delays = (double *)malloc(sizeof(double) * s->num_ports);
     s->ports_available_time = (double *)malloc(sizeof(double) * s->num_ports);
     for(int i = 0; i < s->num_ports; i++) {
-        s->bandwidths[i] = s->conf->ports[i].bandwidth;
+        s->bandwidths[i] = s->conf->ports[i].bandwidth / 1000.0 / 1000.0 / 1000.0;
         s->propagation_delays[i] = PROPAGATION_DELAY;
         s->ports_available_time[i] = 0;
     }
@@ -70,7 +70,7 @@ void switch_init (switch_state *s, tw_lp *lp)
 
     /* Init meters */
     s->meter_list = (srTCM *)malloc(sizeof(srTCM) * s->num_meters);
-    params_srTCM params = {.CIR=100*1000*1000, .CBS=500*1000*1000, .EBS=1000*1000*1000, .is_color_aware=0};
+    params_srTCM params = {.CIR=1000, .CBS=20*1000*1000, .EBS=40*1000*1000, .is_color_aware=0};
     for(int i = 0; i < s->num_meters; i++) {
         srTCM_init(&(s->meter_list[i]), &params);
     }
@@ -91,7 +91,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     /* Init shapers */
     s->shaper_list = (token_bucket *)malloc(sizeof(token_bucket) * s->num_shapers);
     for(int i = 0; i < s->num_shapers; i++) {
-         token_bucket_init(&(s->shaper_list[i]), 1400*8*3, 1000000, s->bandwidths[i]);
+         token_bucket_init(&(s->shaper_list[i]), 1400*8*100,  s->bandwidths[i], s->bandwidths[i]);
     }
 
     /* Init schedulers */
@@ -152,6 +152,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         return;
     }
 
+    s->stats->received++;
+
     // Else, you need to route it to another switch
     out_port = s->routing[final_dest].port_id;
     next_hop = s->routing[final_dest].nextHop;
@@ -178,7 +180,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int drop;
 
     if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
-        drop = 1;
+        drop = 2;
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];
@@ -197,7 +199,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     /* ------- QUEUE -------*/
     if(drop) {
         bf->c1 = 1;  // use the bit field to record the "if" branch
-        switch_update_stats(s->stats, in_msg->packet.pid, 0, 1);   ///////////////////// STATE CHANGE
+        switch_update_stats(s->stats, in_msg->packet.pid, 0, drop);   ///////////////////// STATE CHANGE
         return;
     } else {
         // enqueue the node and modify the routing info of the enqueued node
@@ -249,6 +251,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
         free(node);
 
+        s->stats->num_packets_sent++;
         // For reverse computation
         in_msg->qos_state_snapshot.port_available_time_rc = port_av_time;
         // Update port available time
@@ -267,6 +270,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
             /////// STATE CHANGE
 
             ts = token_bucket_next_available_time(shaper, next_pkt_size) - ts_now;
+            if(ts <= 0 ) {
+                printf("%f, %f\n", token_bucket_next_available_time(shaper, next_pkt_size), ts);
+            }
             assert(ts >0);
 
             tw_event *e = tw_event_new(self,ts,lp);
@@ -294,6 +300,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
         switch_update_stats_reverse(s->stats);
         return;
     }
+    s->stats->received--;
 
     /* ------- METER ------- */
     int meter_index = in_msg->qos_state_snapshot.meter_index;
@@ -325,6 +332,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         // No need to reverse shaper's tokens now, but reverse in later lines.
         s->ports_available_time[in_msg->port_id] = in_msg->qos_state_snapshot.port_available_time_rc;
+        s->stats->num_packets_sent--;
 
     }
 
@@ -373,6 +381,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
     token_bucket_consume(shaper, NULL, ts_now); ///////// STATE CHANGE
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
+    assert(next_pkt_size);
 
     // Check whether the shaper has enough token
     if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
@@ -457,7 +466,7 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
     token_bucket *shaper = &s->shaper_list[out_port];
     token_bucket_consume_reverse(shaper, &in_msg->qos_state_snapshot.shaper_state);
 
-    if(!bf->c0) {
+    if(bf->c0) {
         sp_scheduler *scheduler = &s->scheduler_list[out_port];
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         s->ports_available_time[out_port] = in_msg->qos_state_snapshot.port_available_time_rc;
@@ -501,7 +510,7 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 
 void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
-    printf("REVERSE[%llu][%f]msg_type: %d\n", lp->gid, tw_now(lp), in_msg->type);
+    //printf("REVERSE[%llu][%f]msg_type: %d\n", lp->gid, tw_now(lp), in_msg->type);
     switch (in_msg->type) {
         case ARRIVE :
         {
@@ -530,7 +539,12 @@ void switch_final(switch_state *s, tw_lp *lp)
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-    printf("Switch %llu: Receive:%llu\n", self, s->stats->num_packets_recvd);
+    printf("Switch %llu: final_dest:%llu, R: %llu, S: %llu, D: %llu\n",
+           self, s->stats->num_packets_recvd,
+           s->stats->received,
+           s->stats->num_packets_sent,
+           s->stats->num_packets_dropped);
+
     print_switch_stats(s, lp);
     write_switch_stats_to_file(s, lp);
     switch_free_stats(s);

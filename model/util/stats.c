@@ -8,12 +8,14 @@ void switch_init_stats(switch_state *s, tw_lp *lp) {
     s->stats = (stats *)malloc(sizeof(stats));
     s->stats->num_packets_recvd = 0;
     s->stats->num_packets_dropped = 0;
+    s->stats->num_packets_sent = 0;
+    s->stats->received = 0;
     s->stats->records_capacity = MAX_RECORDS;
     s->stats->records = (record *)malloc(sizeof(record) * s->stats->records_capacity);
 
 }
 
-void switch_update_stats(stats *st, unsigned long pid, double delay, signed char drop) {
+void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned char drop) {
     unsigned long long index = st->num_packets_recvd + st->num_packets_dropped;
     if(index + 1 >= st->records_capacity) {
         st->records_capacity *= 2;
@@ -73,11 +75,18 @@ void print_switch_stats(const switch_state *s, tw_lp *lp) {
 
 void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the statistics to a file
     char str[150];
+    char filename[25];
     char str_header[150];
+    char str_script[150];
+    sprintf(filename, "%llu.csv", lp->gid);
     strcpy(str, out_dir);
-    strcat(str, "/received.csv");
+    strcat(str, "/raw/");
+    strcat(str, filename);
     strcpy(str_header, out_dir);
     strcat(str_header, "/received_header.txt");
+    strcpy(str_script, out_dir);
+    strcat(str_script, "/prepare.sh"); // scripts for gathering raw data together
+
 
     FILE *fptr;
     fptr = fopen(str, "a");
@@ -92,6 +101,11 @@ void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the 
         fptr_header = fopen(str_header, "w");
         fprintf(fptr_header, "pid, delay, drop\n");
         fclose(fptr_header);
+
+        fptr_header = fopen(str_script, "w");
+        fprintf(fptr_header, "cat ./raw/*.csv > received.csv\n");
+        fclose(fptr_header);
+
     }
 
     for (unsigned long long i = 0; i < s->stats->num_packets_recvd + s->stats->num_packets_dropped; ++i) {

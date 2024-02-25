@@ -16,7 +16,7 @@ void srTCM_init(srTCM *meter, const params_srTCM *params) {
 }
 
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
-    const long long CIR = meter->params.CIR;
+    const double CIR = meter->params.CIR;
     const long long CBS = meter->params.CBS;
     const long long EBS = meter->params.EBS;
     const int is_color_aware = meter->params.is_color_aware;
@@ -26,7 +26,7 @@ int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
 
     // Calculate the number of newly generated tokens
     assert(CIR < INT_MAX); // if CIR is too large, the following line of calculation may lose precision
-    num_new_tokens = (long long)(CIR * (current_time - meter->last_update_time) / (1000.0*1000.0* 1000.0));
+    num_new_tokens = (long long)(CIR / 1000.0 * (current_time - meter->last_update_time));
     meter->last_update_time = current_time;
 
     // Add tokens to the bucket(s)

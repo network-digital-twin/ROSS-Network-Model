@@ -13,28 +13,31 @@
 #SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/model_config.h PROPERTIES GENERATED TRUE)
 
 # All source files for the model
+
 SET(network_srcs
 		network_main.c
 		network_switch.c
 		network_map.c
 		network.h
-	model_config.h
+		model_config.h
 		network_terminal.c
+		qos/queue_fifo.c
+		qos/meter.c
+		qos/shaper.c
+		qos/scheduler/strict_priority.c
+		util/message.c
+		util/conversion.c
+		util/workload_parser.c
+		util/config_parser.c
+		util/stats.c
+		qos/REDdropper.c
 )
 
 
 
 
-# Set the executable name here: model
-# You will be executing the ./model binary
+# Set the executable name here: network
+# You will be executing the ./network binary
 ADD_EXECUTABLE(network ${network_srcs})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(network ${ROSS_LIBRARIES} ${MPI_C_LIBRARIES} m)
-
-
-
-# Set the executable name here: network
-# You will be executing the ./network binary
-#ADD_EXECUTABLE(network ${network_srcs})
-#
-#TARGET_LINK_LIBRARIES(network ROSS m)

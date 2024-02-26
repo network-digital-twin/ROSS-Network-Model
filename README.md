@@ -2,7 +2,7 @@
 
 This is an example model for use with [ROSS](http://github.com/carothersc/ROSS), the parallel discrete event simulation system at Rensselaer Polytechnic Institute.
 
-This model simulates a simple postal network of terminals and switches. Terminals send packets which are delivered to specific assigned switches. The switches process packets, determining if each message that they receive can be delivered to a local terminal or if it must be routed to another switch.
+This model simulates a network of terminals and switches. Terminals send packets which are delivered to specific assigned switches. The switches process packets, determining if each packet that they receive can be delivered to a local terminal or if it must be routed to another switch.
 
 This example model shows simple usage of scheduling new events, altering and reading message states, mapping of multiple LPs in a PDES system, and other intricacies of ROSS model development.
 
@@ -23,9 +23,9 @@ make install
 Then modify cmake/FindROSS.cmake to point to the ROSS build directory. 
 Modify the path of `HINTS` in the following lines to point to the build-ross directory.
 ```cmake
-FIND_PATH(WITH_ROSS_PREFIX
-    NAMES include/ross.h
-		HINTS "../build-ross"
+FIND_PATH(WITH_ROSS_PREFIX 
+        NAMES include/ross.h
+        HINTS "../build-ross"
 )
 ```
 

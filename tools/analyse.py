@@ -20,14 +20,15 @@ def read_stats_file(filename):
     df = pd.read_csv(filename, names=columns, delimiter=",")
     return df
 
-def calculate_overall_average_delay_and_jitter(traces_file, stats_file):
-    traces_df = read_traces_file(traces_file)
+
+def calculate_overall_average_delay_and_jitter(stats_file):
     stats_df = read_stats_file(stats_file)
     
     # un-dropped packets
     mean_delay = stats_df[stats_df['drop']==0]['delay'].mean()
-    std_delay = stats_df[stats_df['drop']==0]['delay'].std(ddof=0) # set divisor to be N, not N-1
-    return mean_delay, std_delay
+    std_delay = stats_df[stats_df['drop']==0]['delay'].std(ddof=0)  # set divisor to be N, not N-1
+    drop_rate = len(stats_df[stats_df['drop'] == 1]) / len(stats_df)
+    return mean_delay, std_delay, drop_rate
     
     
 def calculate_detailed_average_delay_and_jitter(traces_file, stats_file):
@@ -71,12 +72,12 @@ if __name__ == "__main__":
     stats_file = sys.argv[2]
 
     detailed_df = calculate_detailed_average_delay_and_jitter(traces_file, stats_file)
-    overall_df = calculate_overall_average_delay_and_jitter(traces_file, stats_file)
+    overall_df = calculate_overall_average_delay_and_jitter(stats_file)
 
     print("Detalied average delay and jitter for each src-dest pair:")
     print(detailed_df)
     detailed_df.to_csv("detailed_stats.csv", header=None)
 
-    print("Overall delay and jitter:")
+    print("Overall delay, jitter, drop rate:")
     print(overall_df)
     pd.DataFrame([overall_df]).to_csv("overall_stats.csv", header=None, index=None)

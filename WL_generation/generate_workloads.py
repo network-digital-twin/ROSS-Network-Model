@@ -3,6 +3,7 @@ import os
 import math
 import random
 import numpy as np
+from tqdm import tqdm
 
 subgraph = 0    # the subgraph for witch the trace will generate packets for
 
@@ -11,9 +12,9 @@ config_path = os.getcwd() + f'/topologies/final_topology_{subgraph}/'       # pa
 data_path = 'data/reindexed.json'  # path to file containing topology
 
 FLOW_THROUGHPUT = 12_500_000           # BYTES PER SECOND
-SIMULATION_TIME = 1_000_000               # Ns
+SIMULATION_TIME = 10_000_000               # Ns
 PAIRS_PER_SRC = {'mu': 1, 'sigma': 0}   # NORMAL DIST
-MSG_SIZE = 50_000                       # BYTES
+MSG_SIZE = 10_000                       # BYTES
 PACKET_SIZE = 1400                      # BYTES
 BANDWIDTH = 12_500_000                  # BYTES
 PRIO_LEVELS = 3                         # QOS PRIORITIES
@@ -41,7 +42,7 @@ for node in data['nodeList']:
     nodes[node['id']] = node
 
 sources = [] # access
-destinations = [] # kernel or mixed 
+destinations = [] # kernel or mixed
 
 for config in configs:
     id = int(config.split('.')[0])
@@ -49,7 +50,7 @@ for config in configs:
     if nodes[id]['deviceLevel'] == 'Access':
         sources.append(id)
     else:
-        destinations.append(id) 
+        destinations.append(id)
 
 print("num src:",len(sources), "|| num dests:",len(destinations))
 
@@ -62,26 +63,42 @@ for src in sources:
     
     flows[src] = random.sample(sources, k=num_pairs)
 
+
 def generate_messages_for_flow(duration_ns):
     total_bytes_for_duration = ns_to_s(duration_ns) * FLOW_THROUGHPUT
+
+    if total_bytes_for_duration < MSG_SIZE:
+        print("ERROR! total_bytes_for_duration < MSG_SIZE: ", total_bytes_for_duration, " < ", MSG_SIZE)
+        exit(-1)
+
+    if total_bytes_for_duration/3 < MSG_SIZE:
+        print("ERROR! Too large MSG_SIZE! total_bytes_for_duration:", total_bytes_for_duration, "MSG_SIZE:", MSG_SIZE)
+        exit(-2)
 
     sizes = []
 
     while sum(sizes) < total_bytes_for_duration:
         sizes.append(int(random.expovariate(1/MSG_SIZE)))
-    
+        if sum(sizes) > total_bytes_for_duration:
+            sizes[-1] = sizes[-1] - (sum(sizes) - total_bytes_for_duration)
+    assert (sum(sizes) == total_bytes_for_duration)
+
     times = np.linspace(0, duration_ns, len(sizes))
     times = [int(x) for x in times]
 
     return times, sizes
 
+
+print("total bytes for duration:", ns_to_s(SIMULATION_TIME) * FLOW_THROUGHPUT)
+print("MSG_SIZE:", MSG_SIZE)
+
 message_id = 0
 messages = []
-for src, pairs in flows.items():
-     for dst in pairs:
+for src, pairs in tqdm(flows.items()):
+    for dst in pairs:
         flow_messages = generate_messages_for_flow(SIMULATION_TIME)
 
-        for size, time in zip(*flow_messages):
+        for time, size in zip(*flow_messages):
             tos = random.randint(0, PRIO_LEVELS-1)
 
             messages.append({
@@ -99,9 +116,9 @@ messages = sorted(messages, key=lambda x:x['timestamp'])
 
 unique_packet_id = 0
 
-f =  open(out_name+'_'+parameters, 'w')
+f = open(out_name+'_'+parameters, 'w')
 
-for msg in messages:
+for msg in tqdm(messages):
     message_id, src, dst, size, timestamp, tos = msg.values()
 
     num_packets = math.ceil(size / PACKET_SIZE) # ceil -> padding last packet to always be PACKET_SIZE
@@ -122,6 +139,6 @@ for msg in messages:
         f.write(packet_info)
 
         packet_time += PACKET_SIZE / BANDWIDTH
-        unique_packet_id += 1 
+        unique_packet_id += 1
 
 f.close()

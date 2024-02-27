@@ -34,9 +34,9 @@ int REDdropper_update(REDdropper *dropper, tw_stime current_time) {
         // TD: Added behaviour for empty queue.
         const double m = (current_time - dropper->q_time)/1000000000 * 150; // 150 is the default value for pkrate in INET: average packet rate for calculations when queue is empty
         dropper->avg = pow(1 - wq, m) * dropper->avg;
+        dropper->q_time = current_time;
     }
 
-    dropper->q_time = current_time;
 
     if (dropper->avg >= maxth) {
         return 1;
@@ -44,6 +44,11 @@ int REDdropper_update(REDdropper *dropper, tw_stime current_time) {
 
     return 0;
 }
+
+void REDdropper_time_update(REDdropper *dropper, tw_stime current_time) {
+    dropper->q_time = current_time;
+}
+
 
 void REDdropper_update_reverse(REDdropper *dropper, REDdropper_state *state) {
     dropper->avg = state->avg;

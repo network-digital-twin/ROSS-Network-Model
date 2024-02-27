@@ -67,6 +67,7 @@ typedef struct {
     sp_scheduler_state scheduler_state;
     token_bucket_state shaper_state;
     REDdropper_state dropper_state;
+    double dropper_q_time;  // an extra field to record another q_time // TODO: this is not elegant!
     tw_stime port_available_time_rc; // For reverse computation: the next available time of a port
 } qos_state_rc; // snapshot of full state of QoS modules that are useful for reverse computation
 
@@ -204,6 +205,7 @@ void REDdropper_init(REDdropper *dropper, double minth, double maxth, double max
 int REDdropper_update(REDdropper *dropper, tw_stime current_time);
 void REDdropper_snapshot(REDdropper *dropper, REDdropper_state *state);
 void REDdropper_update_reverse(REDdropper *dropper, REDdropper_state *state);
+void REDdropper_time_update(REDdropper *dropper, tw_stime current_time);
 
 // ===================================
 // LP

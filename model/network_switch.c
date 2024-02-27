@@ -183,12 +183,14 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];
-        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);
+        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);  // FOR REVERSE COMPUTATION
+        in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2 + 1].q_time;  // Green dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
     } else if(color == COLOR_GREEN) {
         bf->c6 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2 + 1];
-        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);
+        REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state); // FOR REVERSE COMPUTATION
+        in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2].q_time;  // Yellow dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
     } else {
         printf("ERROR: Unknown color\n");
@@ -241,7 +243,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // Send the packet to the destination switch
         tw_event *e = tw_event_new(next_hop, ts, lp);
         tw_message *out_msg = tw_event_data(e);
-        out_msg->packet = *pkt;  // TODO: check if this is correct
+        out_msg->packet = *pkt;
         out_msg->packet.prev_hop = self;
         out_msg->packet.next_hop = -1;
         out_msg->port_id = -1; // no use here, so set it to -1.
@@ -249,6 +251,16 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         tw_event_send(e);
 
         free(node);
+
+        // If the queue is empty, then update droppers' q_time
+        if(scheduler->queue_list[scheduler->last_priority].num_packets == 0) {
+            int dropper_index = scheduler->last_priority + out_port * s->num_qos_levels * 2;
+            REDdropper *dropper;
+            dropper = &s->dropper_list[dropper_index];  // yellow dropper
+            REDdropper_time_update(dropper, ts_now);  /////// STATE CHANGE, but we have taken snapshot before
+            dropper = &s->dropper_list[dropper_index + 1];  // green dropper
+            REDdropper_time_update(dropper, ts_now);  /////// STATE CHANGE, but we have taken snapshot before
+        }
 
         s->stats->num_packets_sent++;
         // For reverse computation
@@ -308,8 +320,10 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
     /* ------- DROPPER --------*/
     if (bf->c5) {
         REDdropper_update_reverse(&s->dropper_list[meter_index * 2], &in_msg->qos_state_snapshot.dropper_state);
+        s->dropper_list[meter_index * 2 + 1].q_time = in_msg->qos_state_snapshot.dropper_q_time;
     } else if (bf->c6) {
         REDdropper_update_reverse(&s->dropper_list[meter_index * 2 + 1], &in_msg->qos_state_snapshot.dropper_state);
+        s->dropper_list[meter_index * 2].q_time = in_msg->qos_state_snapshot.dropper_q_time;
     }
 
     // Packet dropped
@@ -347,9 +361,9 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
     /* ------- QUEUE ------- */
     int queue_index = meter_index;
     queue_t *queue = &s->qos_queue_list[queue_index];
-    if(queue->size_in_bytes == 0) {
-        printf("reverse[%llu][%f] queue_address %x, queue_size%d\n", lp->gid, tw_now(lp), queue,queue->num_packets);
-    }
+//    if(queue->size_in_bytes == 0) {
+//        printf("reverse[%llu][%f] queue_address %x, queue_size%d\n", lp->gid, tw_now(lp), queue,queue->num_packets);
+//    }
     queue_put_reverse(queue);
 
 }
@@ -417,6 +431,18 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
         free(node);
 
+        // If the queue is empty, then update droppers' q_time
+        if(scheduler->queue_list[scheduler->last_priority].num_packets == 0) {
+            bf->c2 = 1;
+            int dropper_index = scheduler->last_priority + out_port * s->num_qos_levels * 2;
+            REDdropper *dropper;
+            dropper = &s->dropper_list[dropper_index];  // yellow dropper
+            in_msg->qos_state_snapshot.dropper_q_time = dropper->q_time;  // FOR REVERSE COMPUTATION
+            REDdropper_time_update(dropper, ts_now);  /////// STATE CHANGE
+            dropper = &s->dropper_list[dropper_index + 1];  // green dropper
+            REDdropper_time_update(dropper, ts_now);  /////// STATE CHANGE
+        }
+
         // For reverse computation
         in_msg->qos_state_snapshot.port_available_time_rc = port_av_time;
         // Update port available time
@@ -467,6 +493,11 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 
     if(bf->c0) {
         sp_scheduler *scheduler = &s->scheduler_list[out_port];
+        if(bf->c2) { // must before the reverse of the scheduler
+            int dropper_index = scheduler->last_priority + out_port * s->num_qos_levels * 2;
+            s->dropper_list[dropper_index].q_time = in_msg->qos_state_snapshot.dropper_q_time;  // yellow dropper
+            s->dropper_list[dropper_index + 1].q_time = in_msg->qos_state_snapshot.dropper_q_time;  // green dropper
+        }
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         s->ports_available_time[out_port] = in_msg->qos_state_snapshot.port_available_time_rc;
     }

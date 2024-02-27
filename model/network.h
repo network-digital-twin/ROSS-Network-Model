@@ -314,9 +314,10 @@ extern char *route_dir_path;
 extern char *home_dir; //used for output directory
 extern char *out_dir; //output dir
 
-extern double yellow_dropper_maxth;
-extern double green_dropper_maxth;
-extern int queue_capacity; // in bytes
+extern int queue_capacity_0; // in bytes
+extern int queue_capacity_1; // in bytes
+extern int queue_capacity_2; // in bytes
+
 extern int srTCM_CBS;
 extern int srTCM_EBS;
 

@@ -11,11 +11,16 @@
 #include <assert.h>
 
 #define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
-#define PROPAGATION_DELAY 5000 // 5000ns, switch-to-switch propagation delay
+#define PROPAGATION_DELAY 10000 // 10000ns, switch-to-switch propagation delay
+#define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
+#define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
+
 #define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
 #define SWITCH_TO_TERMINAL_BANDWIDTH 100 // 100Gbps (1Gbps = 1000Mbps)
 #define NUM_TO_SWITCH_PORTS 2 // Number of to-switch ports
 
+double total_pkt_size = 0;
+double start_time = 0;
 
 //-------------Switch stuff-------------
 
@@ -69,22 +74,29 @@ void switch_init (switch_state *s, tw_lp *lp)
 
     /* Init meters */
     s->meter_list = (srTCM *)malloc(sizeof(srTCM) * s->num_meters);
-    params_srTCM params = {.CIR=1000, .CBS=srTCM_CBS, .EBS=srTCM_EBS, .is_color_aware=0};
-    for(int i = 0; i < s->num_meters; i++) {
-        srTCM_init(&(s->meter_list[i]), &params);
+    params_srTCM params = {.CIR=-1, .CBS=srTCM_CBS, .EBS=srTCM_EBS, .is_color_aware=0};
+    for(int i = 0; i < s->num_ports; i++) {
+        params.CIR = s->bandwidths[i] / s->num_qos_levels * 1000.0;
+        for(int j = 0; j < s->num_qos_levels; j++) {
+            srTCM_init(&(s->meter_list[i * s->num_qos_levels + j]), &params);
+//            printf("index %d, CIR %f Mbps, bw %f Gbps\n", i * s->num_qos_levels + j, params.CIR, s->bandwidths[i]);
+        }
     }
 
     /* Init qos queues */
     s->qos_queue_list = (queue_t *)malloc(sizeof(queue_t) * s->num_queues);
-    for(int i = 0; i < s->num_queues; i++) {
-        queue_init(&(s->qos_queue_list[i]), queue_capacity);
+    assert(s->num_qos_levels == 3);
+    for(int i = 0; i < s->num_ports; i++) {
+        queue_init(&(s->qos_queue_list[i*3]  ), queue_capacity_0);
+        queue_init(&(s->qos_queue_list[i*3+1]), queue_capacity_1);
+        queue_init(&(s->qos_queue_list[i*3+2]), queue_capacity_2);
     }
 
     /* Init droppers */ // Each meter has two droppers
     s->dropper_list = (REDdropper *)malloc(sizeof(REDdropper) * s->num_queues * 2);
     for(int i = 0; i < s->num_queues; i++) {
-        REDdropper_init(&(s->dropper_list[i * 2]), 0, yellow_dropper_maxth, 0, 0.002, &s->qos_queue_list[i]);
-        REDdropper_init(&(s->dropper_list[i * 2 + 1]), 0, green_dropper_maxth, 0, 0.002, &s->qos_queue_list[i]);
+        REDdropper_init(&(s->dropper_list[i * 2]), 0, YELLOW_DROPPER_MAXTH(s->qos_queue_list[i].max_size_in_bytes), 0, 0.002, &s->qos_queue_list[i]);
+        REDdropper_init(&(s->dropper_list[i * 2 + 1]), 0, GREEN_DROPPER_MAXTH(s->qos_queue_list[i].max_size_in_bytes), 0, 0.002, &s->qos_queue_list[i]);
     }
 
     /* Init shapers */
@@ -171,6 +183,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int color = srTCM_update(&s->meter_list[meter_index], in_msg, tw_now(lp));
     ///////////////////// STATE CHANGE
 
+//    if(start_time == 0) {
+//        start_time = tw_now(lp);
+//    }
+//    total_pkt_size += in_msg->packet.size_in_bytes;
+//    printf("throughput %f, CIR %f Mbps\n", total_pkt_size/(tw_now(lp) - start_time), s->meter_list[meter_index].params.CIR);
 
     /*------- DROPPER -------*/
     // Use a dropper to decide whether to drop the packet.
@@ -178,20 +195,30 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     queue_t *queue = &s->qos_queue_list[queue_index];
     int drop;
 
-    if(color == COLOR_RED || queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
+    if(color == COLOR_RED) {
         drop = 1;
+//        printf("[drop] COLOR_RED, switchID: %llu\n", lp->gid);
+    } else if(queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
+        drop = 1;
+//        printf("[drop] queue full, switchID: %llu\n", lp->gid);
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);  // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2 + 1].q_time;  // Green dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
+//        if(drop) {
+//            printf("[drop] COLOR_YELLOW, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
+//        }
     } else if(color == COLOR_GREEN) {
         bf->c6 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2 + 1];
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state); // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2].q_time;  // Yellow dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
+//        if(drop) {
+//            printf("[drop] COLOR_GREEN, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
+//        }
     } else {
         printf("ERROR: Unknown color\n");
         exit(-1);
@@ -500,6 +527,7 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
         }
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         s->ports_available_time[out_port] = in_msg->qos_state_snapshot.port_available_time_rc;
+
     }
     if(bf->c1) {
         s->port_flags[out_port] = 1;

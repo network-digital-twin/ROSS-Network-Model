@@ -13,6 +13,7 @@ void srTCM_init(srTCM *meter, const params_srTCM *params) {
     meter->T_c = params->CBS;
     meter->T_e = params->EBS;
     meter->params = *params;  // copy the value that the pointer points to
+    assert(meter->params.CIR > 0);
 }
 
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {

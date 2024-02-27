@@ -41,9 +41,10 @@ char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
-int queue_capacity = 5000000; // 5MB: 3571 packets
-double yellow_dropper_maxth = 2100;
-double green_dropper_maxth = 3200;
+int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
+int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
+int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
+
 int srTCM_CBS = 2000*8;
 int srTCM_EBS = 3000*8;
 
@@ -52,8 +53,6 @@ int srTCM_EBS = 3000*8;
 const tw_optdef model_opts[] = {
         TWOPT_GROUP("Network Model"),
         TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
-        TWOPT_UINT("yellow-maxth", yellow_dropper_maxth, "The maxth of the yellow REDdropper"),
-        TWOPT_UINT("green-maxth", green_dropper_maxth, "The maxth of the green REDdropper"),
         TWOPT_CHAR("trace-path", trace_path, "Path to the trace file"),
         TWOPT_CHAR("model-home", home_dir, "Path to the home directory of the model, used for determine output paths"),
         TWOPT_CHAR("route-dir-path", route_dir_path, "Path to the routing directory"),
@@ -129,9 +128,9 @@ int network_main(int argc, char** argv, char **env)
 {
     // Re-set parameters here
     total_switches = 5237;
-    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:125000000__SIMULATION_TIME:100000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:50000__PACKET_SIZE:1400__BANDWIDTH:12500000__PRIO_LEVELS:3";
+    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:12500000__SIMULATION_TIME:10000000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:10000__PACKET_SIZE:1400__BANDWIDTH:12500000__PRIO_LEVELS:3";
     route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
-    g_tw_ts_end = 100.0*1000.0;  // simulation end time
+    g_tw_ts_end = 1000.0*1000.0;  // simulation end time
 
 
     tw_opt_add(model_opts);

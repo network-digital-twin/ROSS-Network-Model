@@ -64,6 +64,9 @@ extern int get_terminal_GID(int lpid);
 extern int get_switch_GID(int lpid);
 extern int get_assigned_switch_LID(int lpid);
 extern int get_assigned_switch_GID(int lpid);
+extern tw_peid custom_mapping_lp_to_pe(tw_lpid gid);
+extern void custom_mapping_setup();
+extern tw_lp *custom_mapping_lpgid_to_local(tw_lpid gid);
 
 //DRIVER STUFF -----------------------------
 

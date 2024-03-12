@@ -273,6 +273,10 @@ enum lpTypeVals
 };
 extern tw_lpid lpTypeMapper(tw_lpid gid);
 extern tw_peid network_map(tw_lpid gid);
+extern tw_peid custom_mapping_lp_to_pe(tw_lpid gid);
+extern void custom_mapping_setup();
+extern tw_lp *custom_mapping_lpgid_to_local(tw_lpid gid);
+
 
 // UTILS FUNCTIONS -------------------------------
 tw_stime calc_injection_delay(int bytes, double Gbps);

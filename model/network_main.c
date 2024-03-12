@@ -7,6 +7,7 @@
 // Define LP types for Terminal and Switch
 tw_lptype model_lps[] =
 {
+
         {
             (init_f) terminal_init,
             (pre_run_f) terminal_prerun,
@@ -14,7 +15,7 @@ tw_lptype model_lps[] =
             (revent_f) NULL,
             (commit_f) NULL,
             (final_f) terminal_final,
-            (map_f) network_map,
+            (map_f) custom_mapping_lp_to_pe,
             sizeof(terminal_state)
         },
         {
@@ -24,7 +25,7 @@ tw_lptype model_lps[] =
             (revent_f) switch_RC_event_handler,
             (commit_f) NULL,
             (final_f) switch_final,
-            (map_f) network_map,
+            (map_f) custom_mapping_lp_to_pe,
             sizeof(switch_state)
             },
         { 0 },
@@ -32,9 +33,9 @@ tw_lptype model_lps[] =
 
 
 //Define command line arguments default values
+
 int total_terminals= 1;
 int total_switches = 3;
-
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
 char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
@@ -153,11 +154,10 @@ int network_main(int argc, char** argv, char **env)
     // g_tw_mynode : my node/processor id (mpi rank)
 
     //Custom Mapping
-    /*
+
     g_tw_mapping = CUSTOM;
-    g_tw_custom_initial_mapping = &model_custom_mapping;
-    g_tw_custom_lp_global_to_local_map = &model_mapping_to_lp;
-    */
+    g_tw_custom_initial_mapping = &custom_mapping_setup;
+    g_tw_custom_lp_global_to_local_map = &custom_mapping_lpgid_to_local;;
 
     //Useful ROSS variables (set from command line)
     // g_tw_events_per_pe
@@ -166,8 +166,16 @@ int network_main(int argc, char** argv, char **env)
     // g_tw_nkp
     // g_tw_synchronization_protocol
 
-    g_tw_nlp = total_terminals + total_switches;
-    num_LPs_per_pe = g_tw_nlp / tw_nnodes();
+    tw_lpid total_lps = total_terminals + total_switches;
+
+    // figure out how many LPs are on this PE
+    int min_num_lps_per_pe = floor(total_lps/tw_nnodes());
+    int pes_with_extra_lp = total_lps - (min_num_lps_per_pe * tw_nnodes());
+    num_LPs_per_pe = min_num_lps_per_pe;
+    if (g_tw_mynode < pes_with_extra_lp) {
+        num_LPs_per_pe += 1;
+    }
+
     g_tw_lookahead = 1;
 
     //assert(total_switches == 3);

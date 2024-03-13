@@ -325,4 +325,6 @@ extern int queue_capacity_2; // in bytes
 extern int srTCM_CBS;
 extern int srTCM_EBS;
 
+extern tw_stime propagation_delay; // in nanosecond: switch-to-switch propagation delay
+
 #endif

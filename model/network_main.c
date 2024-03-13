@@ -49,6 +49,8 @@ int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
 int srTCM_CBS = 2000*8;
 int srTCM_EBS = 3000*8;
 
+tw_stime propagation_delay = 10000; // 10000ns = 10us
+
 
 //Command line opts
 const tw_optdef model_opts[] = {
@@ -56,7 +58,11 @@ const tw_optdef model_opts[] = {
         TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
         TWOPT_CHAR("trace-path", trace_path, "Path to the trace file"),
         TWOPT_CHAR("model-home", home_dir, "Path to the home directory of the model, used for determine output paths"),
-        TWOPT_CHAR("route-dir-path", route_dir_path, "Path to the routing directory"),
+        TWOPT_UINT("route-dir-path", route_dir_path, "Path to the routing directory"),
+        TWOPT_STIME("propagation-delay", propagation_delay, "Propagation delay in ns"),
+        TWOPT_UINT("queue-capacity-0", queue_capacity_0, "Queue capacity (bytes) for priority 0"),
+        TWOPT_UINT("queue-capacity-1", queue_capacity_1, "Queue capacity (bytes) for priority 1"),
+        TWOPT_UINT("queue-capacity-2", queue_capacity_2, "Queue capacity (bytes) for priority 2"),
         TWOPT_END()
 };
 

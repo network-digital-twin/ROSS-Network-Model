@@ -21,6 +21,8 @@
 
 double total_pkt_size = 0;
 double start_time = 0;
+unsigned long red_packets = 0;
+unsigned long queue_full_packets = 0;
 
 //-------------Switch stuff-------------
 
@@ -28,7 +30,7 @@ void switch_init_config(switch_state *s, tw_lp *lp)
 {
     char *path = (char *) malloc(strlen(route_dir_path) + 50);
     sprintf(path, "%s/%llu.yaml", route_dir_path, lp->gid);
-    printf("%s\n", path);
+    //printf("%s\n", path);
 
     s->conf = parseConfigFile(path, lp->gid);
     //printf("----------------------------------------------------\n");
@@ -62,7 +64,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     s->ports_available_time = (double *)malloc(sizeof(double) * s->num_ports);
     for(int i = 0; i < s->num_ports; i++) {
         s->bandwidths[i] = s->conf->ports[i].bandwidth / 1000.0 / 1000.0 / 1000.0;
-        s->propagation_delays[i] = PROPAGATION_DELAY;
+        s->propagation_delays[i] = propagation_delay;
         s->ports_available_time[i] = 0;
     }
 
@@ -177,10 +179,11 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /*------- METER -------*/
     // Take a snapshot for reverse computation
+    srTCM *meter = &s->meter_list[meter_index];
     srTCM_state *meter_state = &in_msg->qos_state_snapshot.meter_state;
-    srTCM_snapshot(&s->meter_list[meter_index], meter_state);
+    srTCM_snapshot(meter, meter_state);
     // Update
-    int color = srTCM_update(&s->meter_list[meter_index], in_msg, tw_now(lp));
+    int color = srTCM_update(meter, in_msg, ts_now);
     ///////////////////// STATE CHANGE
 
 //    if(start_time == 0) {

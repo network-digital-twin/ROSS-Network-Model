@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 import numpy as np
@@ -28,7 +29,9 @@ def calculate_overall_average_delay_and_jitter(stats_file):
     mean_delay = stats_df[stats_df['drop']==0]['delay'].mean()
     std_delay = stats_df[stats_df['drop']==0]['delay'].std(ddof=0)  # set divisor to be N, not N-1
     drop_rate = len(stats_df[stats_df['drop'] == 1]) / len(stats_df)
-    return mean_delay, std_delay, drop_rate
+    drop_count = len(stats_df[stats_df['drop'] == 1])
+    total_count = len(stats_df)
+    return mean_delay, std_delay, drop_rate, total_count, drop_count
     
     
 def calculate_detailed_average_delay_and_jitter(traces_file, stats_file):
@@ -64,20 +67,26 @@ def calculate_detailed_average_delay_and_jitter(traces_file, stats_file):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python my_script.py traces_file stats_file")
+    if len(sys.argv) != 2:
+        print("Usage: python my_script.py stats_file_folder")
         sys.exit(1)
 
-    traces_file = sys.argv[1]
-    stats_file = sys.argv[2]
+    stats_folder = sys.argv[1]
+    stats_file = stats_folder + "/received.csv"
+    stats_out_folder = stats_folder + "/stats"
+    with open("conf", 'r') as f:
+        traces_file = f.readline().strip()
+        print("trace file: ", traces_file)
+        print("stats file: ", stats_file)
+        os.makedirs(stats_out_folder, exist_ok=True)
 
-    detailed_df = calculate_detailed_average_delay_and_jitter(traces_file, stats_file)
-    overall_df = calculate_overall_average_delay_and_jitter(stats_file)
+        detailed_df = calculate_detailed_average_delay_and_jitter(traces_file, stats_file)
+        overall_df = calculate_overall_average_delay_and_jitter(stats_file)
 
-    print("Detalied average delay and jitter for each src-dest pair:")
-    print(detailed_df)
-    detailed_df.to_csv("detailed_stats.csv", header=None)
+        print("Detalied average delay and jitter for each src-dest pair:")
+        print(detailed_df)
+        detailed_df.to_csv(stats_out_folder + "/detailed_stats.csv", header=None)
 
-    print("Overall delay, jitter, drop rate:")
-    print(overall_df)
-    pd.DataFrame([overall_df]).to_csv("overall_stats.csv", header=None, index=None)
+        print("Overall delay, jitter, drop rate, total count, drop count:")
+        print(overall_df)
+        pd.DataFrame([overall_df]).to_csv(stats_out_folder + "/overall_stats.csv", header=None, index=None)

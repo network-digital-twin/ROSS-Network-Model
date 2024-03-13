@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import pandas as pd
 import numpy as np
@@ -72,6 +73,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     stats_folder = sys.argv[1]
+    subprocess.run(["sh", "-i", "./prepare.sh"], cwd=stats_folder)
+
     stats_file = stats_folder + "/received.csv"
     stats_out_folder = stats_folder + "/stats"
     with open("conf", 'r') as f:

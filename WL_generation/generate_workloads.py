@@ -5,6 +5,8 @@ import random
 import numpy as np
 from tqdm import tqdm
 
+random.seed(42)
+
 subgraph = 0    # the subgraph for witch the trace will generate packets for
 
 out_name = f'traces/trace_{subgraph}'                                       # name of saved trace
@@ -61,7 +63,7 @@ for src in sources:
     while num_pairs <= 0:
         num_pairs = int(random.normalvariate(**PAIRS_PER_SRC))
     
-    flows[src] = random.sample(sources, k=num_pairs)
+    flows[src] = random.sample(destinations, k=num_pairs)
 
 
 def generate_messages_for_flow(duration_ns):
@@ -132,13 +134,13 @@ for msg in tqdm(messages):
             f"{str(src)} "
             f"{str(dst)} "
             f"{str(PACKET_SIZE)} "
-            f"{str(packet_time)} "
+            f"{str(packet_time)} "  # in nanosecond
             f"{str(tos)}\n"
         )
 
         f.write(packet_info)
 
-        packet_time += PACKET_SIZE / BANDWIDTH
+        packet_time += s_to_ns(PACKET_SIZE / BANDWIDTH)
         unique_packet_id += 1
 
 f.close()

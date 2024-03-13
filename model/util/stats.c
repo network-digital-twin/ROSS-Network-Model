@@ -2,6 +2,7 @@
 // Created by Nan on 2024/2/20.
 //
 #include "network.h"
+#include <sys/stat.h>
 
 void switch_init_stats(switch_state *s, tw_lp *lp) {
 
@@ -105,6 +106,7 @@ void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the 
         fptr_header = fopen(str_script, "w");
         fprintf(fptr_header, "cat ./raw/*.csv > received.csv\n");
         fclose(fptr_header);
+        chmod(str_script, 0777);
 
     }
 

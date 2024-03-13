@@ -183,24 +183,24 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     meter = &s->meter_list[meter_index];
     srTCM_state *meter_state = &in_msg->qos_state_snapshot.meter_state;
     srTCM_snapshot(meter, meter_state);
-    if (self == PROBE_ID) {
-        srTCM *tmp_meter = &s->meter_list[out_port * s->num_qos_levels];
-        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-        tmp_meter++;
-        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-        tmp_meter++;
-        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-        printf("port %d\t", out_port);
-        printf("%f", ts_now);
-
-    }
+//    if (self == PROBE_ID) {
+//        srTCM *tmp_meter = &s->meter_list[out_port * s->num_qos_levels];
+//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
+//        tmp_meter++;
+//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
+//        tmp_meter++;
+//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
+//        printf("port %d\t", out_port);
+//        printf("%f", ts_now);
+//
+//    }
     // Update
     int color = srTCM_update(meter, in_msg, ts_now);
     ///////////////////// STATE CHANGE
 
-    if (self == PROBE_ID) {
-        printf("\n");
-    }
+//    if (self == PROBE_ID) {
+//        printf("\n");
+//    }
 //    if(start_time == 0) {
 //        start_time = tw_now(lp);
 //    }
@@ -215,15 +215,15 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     if(color == COLOR_RED) {
         drop = 1;
-        if(self == PROBE_ID) {
-            printf("red drop\n");
-        }
+//        if(self == PROBE_ID) {
+//            printf("red drop\n");
+//        }
 //        printf("[drop] COLOR_RED, switchID: %llu\n", lp->gid);
     } else if(queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         drop = 1;
-        if(self == PROBE_ID) {
-            printf("queue full drop\n");
-        }
+//        if(self == PROBE_ID) {
+//            printf("queue full drop\n");
+//        }
 //        printf("[drop] queue full, switchID: %llu\n", lp->gid);
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
@@ -231,9 +231,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);  // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2 + 1].q_time;  // Green dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
-        if(drop && self == PROBE_ID) {
-            printf("yellow drop\n");
-        }
+//        if(drop && self == PROBE_ID) {
+//            printf("yellow drop\n");
+//        }
 //        if(drop) {
 //            printf("[drop] COLOR_YELLOW, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
 //        }
@@ -243,9 +243,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state); // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2].q_time;  // Yellow dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
-        if(drop && self == PROBE_ID) {
-            printf("green drop\n");
-        }
+//        if(drop && self == PROBE_ID) {
+//            printf("green drop\n");
+//        }
 //        if(drop) {
 //            printf("[drop] COLOR_GREEN, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
 //        }

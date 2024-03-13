@@ -12,7 +12,7 @@
  * @param rate unit: tokens per nanosecond (Giga tokens per second)
  * @param port_bandwidth
  */
-void token_bucket_init(token_bucket *bucket, long long capacity, double rate, double port_bandwidth) {
+void token_bucket_init(token_bucket *bucket, uint32_t capacity, double rate, double port_bandwidth) {
     bucket->capacity = capacity;
     bucket->tokens = capacity;
     bucket->rate = rate;
@@ -28,7 +28,7 @@ void token_bucket_init(token_bucket *bucket, long long capacity, double rate, do
  * @return
  */
 void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time) {
-    long long num_new_tokens;
+    uint32_t num_new_tokens;
     int packet_size;
     if(pkt == NULL) {
        packet_size = 0;
@@ -38,8 +38,12 @@ void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime curr
 
     // Calculate the number of newly generated tokens
     assert(bucket->rate < INT_MAX);  // if rate is too large, the following line of calculation may lose precision
-    num_new_tokens = (long long) (bucket->rate * (current_time - bucket->last_update_time));
-    bucket->last_update_time = current_time;
+    num_new_tokens = floor(bucket->rate * (current_time - bucket->last_update_time));
+    if(num_new_tokens > 0) {
+        // If the time difference is too small, there might be no token due to the floor() function
+        // Then we do not regard this as an "update"
+        bucket->last_update_time = current_time;
+    }
 
     // Add tokens to the bucket
     bucket->tokens += num_new_tokens;

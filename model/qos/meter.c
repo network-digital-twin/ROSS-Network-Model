@@ -17,35 +17,35 @@ void srTCM_init(srTCM *meter, const params_srTCM *params) {
 }
 
 int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
-    const double CIR = meter->params.CIR;
-    const long long CBS = meter->params.CBS;
-    const long long EBS = meter->params.EBS;
-    const int is_color_aware = meter->params.is_color_aware;
+    params_srTCM *params = &meter->params;
     const int packet_size_in_bits = msg->packet.size_in_bytes * 8;
-    long long num_new_tokens;
+    uint32_t num_new_tokens;
     int color = -1;
 
     // Calculate the number of newly generated tokens
-    assert(CIR < INT_MAX); // if CIR is too large, the following line of calculation may lose precision
-    num_new_tokens = (long long)(CIR / 1000.0 * (current_time - meter->last_update_time));
-    meter->last_update_time = current_time;
+    num_new_tokens = floor(params->CIR / 1000.0 * (current_time - meter->last_update_time));
+    if(num_new_tokens > 0) {
+        // If the time difference is too small, there might be no token due to the floor() function
+        // Then we do not regard this as an "update"
+        meter->last_update_time = current_time;
+    }
 
     // Add tokens to the bucket(s)
     // First add to C bucket
     meter->T_c += num_new_tokens;
-    if(meter->T_c > CBS) {
-        long long _delta = meter->T_c - CBS;
-        meter->T_c = CBS;
+    if(meter->T_c > params->CBS) {
+        long long _delta = meter->T_c - params->CBS;
+        meter->T_c = params->CBS;
         // Then add excess tokens to E bucket
         meter->T_e += _delta;
-        if(meter->T_e > EBS) {
-            meter->T_e = EBS;
+        if(meter->T_e > params->EBS) {
+            meter->T_e = params->EBS;
         }
     }
 
     // Mark/color the packet (T_e can be 0)
     // 1. color-blind mode
-    if(is_color_aware == 0) {
+    if(meter->params.is_color_aware == 0) {
         if(packet_size_in_bits <= meter->T_c) {
             color = COLOR_GREEN;
             meter->T_c -= packet_size_in_bits;

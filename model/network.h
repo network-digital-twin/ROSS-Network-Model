@@ -36,8 +36,8 @@ typedef struct {
 
 // QOS METER STATE -------------------
 typedef struct {
-    long long T_c;
-    long long T_e;
+    uint32_t T_c;
+    uint32_t T_e;
     tw_stime last_update_time;
 } srTCM_state;
 
@@ -148,14 +148,14 @@ enum {
 
 typedef struct {
     double CIR;  // (Unit: Mbps == bits per micro-sec) committed information rate: token generation rate;
-    long long CBS;  // (in bits) committed burst size: capacity of bucket C;
-    long long EBS;  // (in bits) excess burst size: capacity of bucket E; can be 0;
+    uint32_t CBS;  // (in bits) committed burst size: capacity of bucket C;
+    uint32_t EBS;  // (in bits) excess burst size: capacity of bucket E; can be 0;
     int is_color_aware;  // 1 for color-aware mode, 0 for color-blind mode
 } params_srTCM;
 
 typedef struct {
-    long long T_c;  // number of tokens in bucket C, initialised to CBS
-    long long T_e;  // number of tokens in bucket E, initialised to EBS
+    uint32_t T_c;  // number of tokens in bucket C, initialised to CBS
+    uint32_t T_e;  // number of tokens in bucket E, initialised to EBS
     tw_stime last_update_time;  // last time the meter is updated
     params_srTCM params;
 } srTCM;
@@ -178,7 +178,7 @@ void queue_take_reverse(queue_t *queue, const packet *pkt);
 
 // QOS SHAPER FUNCTIONS -----------------------------
 
-void token_bucket_init(token_bucket *bucket, long long capacity, double rate, double port_bandwidth);
+void token_bucket_init(token_bucket *bucket, uint32_t capacity, double rate, double port_bandwidth);
 void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime current_time);
 void token_bucket_consume_reverse(token_bucket *bucket, token_bucket_state *bucket_state);
 void token_bucket_snapshot(token_bucket *bucket, token_bucket_state *state);
@@ -322,8 +322,8 @@ extern int queue_capacity_0; // in bytes
 extern int queue_capacity_1; // in bytes
 extern int queue_capacity_2; // in bytes
 
-extern int srTCM_CBS;
-extern int srTCM_EBS;
+extern uint32_t srTCM_CBS;
+extern uint32_t srTCM_EBS;
 
 extern tw_stime propagation_delay; // in nanosecond: switch-to-switch propagation delay
 

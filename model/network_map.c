@@ -77,7 +77,7 @@ void custom_mapping_setup(void) {
     }
 
     printf("Node %ld: g_tw_nlp %llu, g_tw_nkp %lu, lps_per_pe %d\n", g_tw_mynode, g_tw_nlp, g_tw_nkp, lps_per_pe);
-
+    printf("GIDs: ");
 
     // set up the LPs
     for (int lp_index = 0; lp_index < lps_per_pe; lp_index++) {
@@ -90,5 +90,12 @@ void custom_mapping_setup(void) {
         kpid = lp_index % nkp_per_pe;
         tw_lp_onkp(g_tw_lp[lp_index], g_tw_kp[kpid]);
     }
+
+    for (int lp_index = 0; lp_index < lps_per_pe; lp_index++) {
+        printf("%llu ", g_tw_lp[lp_index]->gid);
+    }
+    printf("\n");
+
+
 }
 

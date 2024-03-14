@@ -63,6 +63,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, message *in_msg, tw_lp *lp)
         out_msg->sender = self;
         out_msg->final_dest = final_dest;
         out_msg->next_dest = next_dest;
+        out_msg->type = ARRIVE;
         tw_event_send(e);
         s->num_packets_sent++;
 
@@ -79,6 +80,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, message *in_msg, tw_lp *lp)
         out_msg->sender = self;
         out_msg->final_dest = final_dest;
         out_msg->next_dest = next_dest;
+        out_msg->type = ARRIVE;
         tw_event_send(e);
         s->num_packets_sent++;
     }

@@ -46,10 +46,12 @@ int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
 int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
 int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
 
-uint32_t srTCM_CBS = 1400*20*8;
-uint32_t srTCM_EBS = 1400*1000*8;
+uint32_t srTCM_CBS = 1400*50*8;
+uint32_t srTCM_EBS = 1400*500*8;
 
-tw_stime propagation_delay = 10000; // 10000ns = 10us
+tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
+
+int generationInterval = 100000; // in ns
 
 
 //Command line opts
@@ -135,9 +137,9 @@ int network_main(int argc, char** argv, char **env)
 {
     // Re-set parameters here
     total_switches = 5237;
-    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:12500000__SIMULATION_TIME:10000000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:10000__PACKET_SIZE:1400__BANDWIDTH:12500000__PRIO_LEVELS:3";
+    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-100000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
     route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
-    g_tw_ts_end = 11.0*1000.0*1000.0;  // simulation end time
+    g_tw_ts_end = 500.0*1000.0*1000.0;  // simulation end time
 
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);

@@ -326,5 +326,5 @@ extern uint32_t srTCM_CBS;
 extern uint32_t srTCM_EBS;
 
 extern tw_stime propagation_delay; // in nanosecond: switch-to-switch propagation delay
-
+extern int generationInterval; // generation interval for the shaper (in ns)
 #endif

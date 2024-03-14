@@ -13,21 +13,21 @@ out_name = f'traces/trace_{subgraph}'                                       # na
 config_path = os.getcwd() + f'/topologies/final_topology_{subgraph}/'       # path to switch config files for topology
 data_path = 'data/reindexed.json'  # path to file containing topology
 
-FLOW_THROUGHPUT = 12_500_000           # BYTES PER SECOND
-SIMULATION_TIME = 10_000_000               # Ns
+FLOW_THROUGHPUT = 1_250_000           # BYTES PER SECOND
+SIMULATION_TIME = 100_000_000              # Ns
 PAIRS_PER_SRC = {'mu': 1, 'sigma': 0}   # NORMAL DIST
 MSG_SIZE = 10_000                       # BYTES
 PACKET_SIZE = 1400                      # BYTES
-BANDWIDTH = 12_500_000                  # BYTES
+BANDWIDTH = 1_250_000                  # BYTES
 PRIO_LEVELS = 3                         # QOS PRIORITIES
 
-parameters = (f"FLOW_THROUGHPUT:{FLOW_THROUGHPUT}__"
-          f"SIMULATION_TIME:{SIMULATION_TIME}__"
-          f"PAIRS_PER_SRC:{tuple(PAIRS_PER_SRC.values())}__"
-          f"MSG_SIZE:{MSG_SIZE}__"
-          f"PACKET_SIZE:{PACKET_SIZE}__"
-          f"BANDWIDTH:{BANDWIDTH}__"
-          f"PRIO_LEVELS:{PRIO_LEVELS}")
+parameters = (f"FLOW_THROUGHPUT-{FLOW_THROUGHPUT}__"
+          f"SIMULATION_TIME-{SIMULATION_TIME}__"
+          f"PAIRS_PER_SRC-"+"{}-{}".format(*PAIRS_PER_SRC.values())+"__"
+          f"MSG_SIZE-{MSG_SIZE}__"
+          f"PACKET_SIZE-{PACKET_SIZE}__"
+          f"BANDWIDTH-{BANDWIDTH}__"
+          f"PRIO_LEVELS-{PRIO_LEVELS}")
 
 print(parameters)
 

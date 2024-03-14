@@ -41,6 +41,9 @@ int REDdropper_update(REDdropper *dropper, tw_stime current_time) {
     if (dropper->avg >= maxth) {
         return 1;
     }
+    if (qlen > maxth) {
+        return 1;
+    }
 
     return 0;
 }

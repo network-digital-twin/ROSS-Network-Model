@@ -63,7 +63,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
         }
     }
 
-
+    double max_ts = 0;
     for (int i = 0; i < s->pks.num; i++)
     {
         src = s->pks.pks[i].src;
@@ -72,6 +72,9 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
 
         if(ts >= g_tw_ts_end) {
             break;
+        }
+        if(ts > max_ts) {
+            max_ts = ts;
         }
         //printf("To be scheduled at %f\n", ts);
 
@@ -94,6 +97,7 @@ void terminal_prerun(terminal_state *s, tw_lp *lp)
 
 
     }
+    printf("max timestamp of the packet: %f\n", max_ts);
     printf("Schedule done\n");
 
     unsigned long long max = get_max_num_packets_for_a_switch(count);

@@ -23,7 +23,8 @@ int srTCM_update(srTCM *meter, const tw_message *msg, tw_stime current_time) {
     int color = -1;
 
     // Calculate the number of newly generated tokens
-    num_new_tokens = floor(params->CIR / 1000.0 * (current_time - meter->last_update_time));
+    tw_stime elapsed = current_time - meter->last_update_time;
+    num_new_tokens = floor(params->CIR / 1000.0 * elapsed);
     if(num_new_tokens > 0) {
         // If the time difference is too small, there might be no token due to the floor() function
         // Then we do not regard this as an "update"

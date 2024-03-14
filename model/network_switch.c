@@ -218,13 +218,13 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 //        if(self == PROBE_ID) {
 //            printf("red drop\n");
 //        }
-//        printf("[drop] COLOR_RED, switchID: %llu\n", lp->gid);
+        printf("[drop] COLOR_RED, switchID: %llu\n", lp->gid);
     } else if(queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         drop = 1;
 //        if(self == PROBE_ID) {
 //            printf("queue full drop\n");
 //        }
-//        printf("[drop] queue full, switchID: %llu\n", lp->gid);
+        printf("[drop] queue full, switchID: %llu\n", lp->gid);
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];
@@ -276,7 +276,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
 
     // Check whether the shaper has enough token
-    if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
+    while (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
         bf->c2 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to take a packet from the queue
@@ -324,12 +324,19 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         in_msg->qos_state_snapshot.port_available_time_rc = port_av_time;
         // Update port available time
         s->ports_available_time[out_port] = MAX(ts_now, port_av_time) + injection_delay;  /////// STATE CHANGE
+
+        // If the scheduler has more to send, then continue sending
+        next_pkt_size = sp_has_next(scheduler);
+        if(next_pkt_size <= 0) { // HAS NO MORE TO SEND
+            break;
+        }
 #ifdef DEBUG
         if(self==0) {
             printf("Send out now.\n");
         }
 #endif
-    } else { // SEND OUT LATER
+    }
+    if(next_pkt_size){ // SEND OUT LATER
         // If the sending handler is [NOT] already issuing recursive sending events, then schedule a new SEND event here
         if(!s->port_flags[out_port]) {
             // Send out in the future! Schedule a future SEND event to myself
@@ -451,10 +458,14 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
     token_bucket_consume(shaper, NULL, ts_now); ///////// STATE CHANGE
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
-    assert(next_pkt_size);
+    if(!next_pkt_size) {
+        s->port_flags[out_port] = 0;  // Clear the flag for this port, indicating the port will not self-trigger SEND events
+        /////// STATE CHANGE
+        return; // return now!
+    }
 
     // Check whether the shaper has enough token
-    if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
+    while (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
         bf->c0 = 1; // use the bit field to record the "if" branch
 
         // Use scheduler to dequeue a packet. Need to free the memory later within this function.

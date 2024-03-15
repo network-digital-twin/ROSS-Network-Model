@@ -46,10 +46,10 @@ int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
 int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
 int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
 
-uint32_t srTCM_CBS = 1400*20*8;
-uint32_t srTCM_EBS = 1400*1000*8;
+uint32_t srTCM_CBS = 1400*50*8;
+uint32_t srTCM_EBS = 1400*500*8;
 
-tw_stime propagation_delay = 10000; // 10000ns = 10us
+tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
 
 
 //Command line opts
@@ -133,11 +133,14 @@ int create_out_dir() {
 #define network_main main
 int network_main(int argc, char** argv, char **env)
 {
+	g_tw_lookahead = 1;
     // Re-set parameters here
     total_switches = 5237;
-    trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT:12500000__SIMULATION_TIME:10000000__PAIRS_PER_SRC:(1, 0)__MSG_SIZE:10000__PACKET_SIZE:1400__BANDWIDTH:12500000__PRIO_LEVELS:3";
-    route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
-    g_tw_ts_end = 11.0*1000.0*1000.0;  // simulation end time
+    g_tw_ts_end = 1000.0*1000.0*1000.0;  // simulation end time
+
+    trace_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-100000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
+    route_dir_path = "/home/nan42/zte/omnet-bench/src/zte_qos/simulations/dataset/zte/final_topology_0";
+    home_dir = "/home/nan42/codes-dev/ROSS-Network-Model";
 
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);
@@ -181,7 +184,6 @@ int network_main(int argc, char** argv, char **env)
         num_LPs_per_pe += 1;
     }
 
-    g_tw_lookahead = 1;
 
     //assert(total_switches == 3);
 

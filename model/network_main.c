@@ -37,9 +37,9 @@ tw_lptype model_lps[] =
 int total_terminals= 1;
 int total_switches = 3;
 
-char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/sorted_trace_test.txt";
-char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/model/data/test_routing";
-char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
+char *trace_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/1000ms/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
+char *route_dir_path = "/home/nan42/zte/omnet-bench/src/zte_qos/simulations/dataset/zte/final_topology_0";
+char *home_dir = "/home/nan42/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
 
 int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
@@ -137,10 +137,6 @@ int network_main(int argc, char** argv, char **env)
     // Re-set parameters here
     total_switches = 5237;
     g_tw_ts_end = 1000.0*1000.0*1000.0;  // simulation end time
-
-    trace_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-100000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
-    route_dir_path = "/home/nan42/zte/omnet-bench/src/zte_qos/simulations/dataset/zte/final_topology_0";
-    home_dir = "/home/nan42/codes-dev/ROSS-Network-Model";
 
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);

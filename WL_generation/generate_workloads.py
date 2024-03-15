@@ -14,7 +14,7 @@ config_path = os.getcwd() + f'/topologies/final_topology_{subgraph}/'       # pa
 data_path = 'data/reindexed.json'  # path to file containing topology
 
 FLOW_THROUGHPUT = 1_250_000           # BYTES PER SECOND
-SIMULATION_TIME = 100_000_000              # Ns
+SIMULATION_TIME = 1_000_000_000              # Ns
 PAIRS_PER_SRC = {'mu': 1, 'sigma': 0}   # NORMAL DIST
 MSG_SIZE = 10_000                       # BYTES
 PACKET_SIZE = 1400                      # BYTES

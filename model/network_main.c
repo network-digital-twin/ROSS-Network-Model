@@ -34,13 +34,14 @@ tw_lptype model_lps[] =
 
 //Define command line arguments default values
 
-int total_terminals= 1;
-int total_switches = 5237;
+tw_lpid total_terminals= 1;
+tw_lpid total_switches = 5237;
 
 char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
 char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
 char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
+char *partition_file = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/partition/graph-for-metis.txt.part.2";
 
 int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
 int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
@@ -82,8 +83,8 @@ void displayModelSettings()
         printf("\t g_tw_nlp: %llu\n", g_tw_nlp);
         printf("\t custom_LPs_per_pe: %i\n\n", num_LPs_per_pe);
 
-        printf("\t total_terminals: %i\n", total_terminals);
-        printf("\t total_switches: %i\n\n", total_switches);
+        printf("\t total_terminals: %llu\n", total_terminals);
+        printf("\t total_switches: %llu\n\n", total_switches);
 
 
         for (int i = 0; i < 30; i++)
@@ -171,16 +172,18 @@ int network_main(int argc, char** argv, char **env)
     tw_lpid total_lps = total_terminals + total_switches;
 
     // figure out how many LPs are on this PE
-    int min_num_lps_per_pe = floor(total_lps/tw_nnodes());
-    int pes_with_extra_lp = total_lps - (min_num_lps_per_pe * tw_nnodes());
-    num_LPs_per_pe = min_num_lps_per_pe;
-    if (g_tw_mynode < pes_with_extra_lp) {
-        num_LPs_per_pe += 1;
-    }
+
+    init_partition(partition_file, total_lps);
+    num_LPs_per_pe = pe_to_num_lps[g_tw_mynode];
+
+//    int min_num_lps_per_pe = floor(total_lps/tw_nnodes());
+//    int pes_with_extra_lp = total_lps - (min_num_lps_per_pe * tw_nnodes());
+//    num_LPs_per_pe = min_num_lps_per_pe;
+//    if (g_tw_mynode < pes_with_extra_lp) {
+//        num_LPs_per_pe += 1;
+//    }
 
     g_tw_lookahead = 1;
-
-    //assert(total_switches == 3);
 
     displayModelSettings();
 

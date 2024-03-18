@@ -276,6 +276,7 @@ extern tw_peid network_map(tw_lpid gid);
 extern tw_peid custom_mapping_lp_to_pe(tw_lpid gid);
 extern void custom_mapping_setup();
 extern tw_lp *custom_mapping_lpgid_to_local(tw_lpid gid);
+extern void init_partition(char *filename, tw_lpid total_lps);
 
 
 // UTILS FUNCTIONS -------------------------------
@@ -311,8 +312,8 @@ tw_stime lookahead;
 unsigned int nlp_per_pe;
 unsigned int num_LPs_per_pe;
 
-int total_terminals;
-int total_switches;
+tw_lpid total_terminals;
+tw_lpid total_switches;
 extern char *trace_path;
 extern char *route_dir_path;
 extern char *home_dir; //used for output directory
@@ -326,5 +327,10 @@ extern uint32_t srTCM_CBS;
 extern uint32_t srTCM_EBS;
 
 extern tw_stime propagation_delay; // in nanosecond: switch-to-switch propagation delay
+extern char *partition_file;
+extern tw_peid *pe_to_num_lps;
+extern tw_lpid *lp_to_pe;
+extern tw_lpid *lp_to_lid;
+extern tw_lpid *local_gids; // the list of GIDs on this particular PE.
 
 #endif

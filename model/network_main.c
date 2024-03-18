@@ -37,18 +37,18 @@ tw_lptype model_lps[] =
 tw_lpid total_terminals= 1;
 tw_lpid total_switches = 5237;
 
-char *trace_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/traces/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
-char *route_dir_path = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
-char *home_dir = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model";
+char *trace_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/1000ms/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
+char *route_dir_path = "/home/nan42/zte/omnet-bench/src/zte_qos/simulations/dataset/zte/final_topology_0";
+char *home_dir = "/home/nan42/codes-dev/ROSS-Network-Model";
 char *out_dir = NULL;
-char *partition_file = "/Users/Nann/workspace/codes-dev/ROSS-Network-Model/partition/graph-for-metis.txt.part.2";
+char *partition_file = "/home/nan42/codes-dev/ROSS-Network-Model/partition/graph-for-metis.txt.part.2";
 
 int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
 int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
 int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
 
-uint32_t srTCM_CBS = 1400*20*8;
-uint32_t srTCM_EBS = 1400*1000*8;
+uint32_t srTCM_CBS = 1400*50*8;
+uint32_t srTCM_EBS = 1400*500*8;
 
 tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
 
@@ -64,7 +64,7 @@ const tw_optdef model_opts[] = {
         TWOPT_UINT("queue-capacity-0", queue_capacity_0, "Queue capacity (bytes) for priority 0"),
         TWOPT_UINT("queue-capacity-1", queue_capacity_1, "Queue capacity (bytes) for priority 1"),
         TWOPT_UINT("queue-capacity-2", queue_capacity_2, "Queue capacity (bytes) for priority 2"),
-        TWOPT_END()
+	TWOPT_END()
 };
 
 
@@ -140,6 +140,12 @@ int network_main(int argc, char** argv, char **env)
     tw_opt_add(model_opts);
     tw_init(&argc, &argv);
 
+    if(tw_nnodes() > 1) {
+
+        char str[100];
+        sprintf(str, "/home/nan42/codes-dev/ROSS-Network-Model/partition/graph-for-metis.txt.part.%d", tw_nnodes());
+        partition_file=&str;
+    }
 #ifdef DEBUG
     // debug mode, need to attach a debugger after run
     // See: https://www.jetbrains.com/help/clion/openmpi.html#debug-procedure

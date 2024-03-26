@@ -27,10 +27,10 @@ Now run `ls`, your current working directory should contains the following three
 ROSS  ROSS-Network-Model  build-ross
 ```
 
-Then checkout to the `main-shaper-test` branch:
+Then checkout to the `experiments-INET` branch:
 ```bash
 cd ROSS-Network-Model
-git checkout main-shaper-test
+git checkout experiments-INET
 ```
 
 (Optional) If you place the ROSS build folder (`build-ross`) to a diffrent path from the above instructions, then you need to modify `cmake/FindROSS.cmake` as follows to point to the ROSS build directory. **Otherwise, skip this step.**

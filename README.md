@@ -1,11 +1,10 @@
 # Introduction
 
-This is an example model for use with [ROSS](http://github.com/carothersc/ROSS), the parallel discrete event simulation system at Rensselaer Polytechnic Institute.
+This repo contains the source code of **Quaint** and the data used in the paper. 
 
-This model simulates a network of terminals and switches. Terminals send packets which are delivered to specific assigned switches. The switches process packets, determining if each packet that they receive can be delivered to a local terminal or if it must be routed to another switch.
-
-This example model shows simple usage of scheduling new events, altering and reading message states, mapping of multiple LPs in a PDES system, and other intricacies of ROSS model development.
-
+**Code and data for the experiments conducted in the paper are stored in different branches**:
+- For the analysis of accuracy and efficiency compared to INET, see the branch [`experiments-INET`](https://github.com/network-digital-twin/ROSS-Network-Model/tree/experiments-INET)
+- For the scalability characterisation of **Quaint**, see the branch [`main-partitioning`](https://github.com/network-digital-twin/ROSS-Network-Model/tree/main-partitioning)
 
 # Installation
 

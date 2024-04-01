@@ -185,12 +185,6 @@ int network_main(int argc, char** argv, char **env)
     init_partition(partition_file, total_lps);
     num_LPs_per_pe = pe_to_num_lps[g_tw_mynode];
 
-//    int min_num_lps_per_pe = floor(total_lps/tw_nnodes());
-//    int pes_with_extra_lp = total_lps - (min_num_lps_per_pe * tw_nnodes());
-//    num_LPs_per_pe = min_num_lps_per_pe;
-//    if (g_tw_mynode < pes_with_extra_lp) {
-//        num_LPs_per_pe += 1;
-//    }
 
     g_tw_lookahead = 1;
 

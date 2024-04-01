@@ -8,11 +8,7 @@
 
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define MAX_RECORDS 10000 // 10000 records to store statistics in a switch
-#define MEAN_TERMINAL_WAIT .005
-#define MEAN_SWITCH_PROCESS_WAIT .01
-// #define MEAN_SWITCH_PROCESS_WAIT 45.0
 
-#define MSG_PER_TERMINAL 500
 
 // ===================================
 // PACKET STRUCTS --------------------

@@ -2,6 +2,11 @@
 
 This branch contains the source code and data for the scalability evaluation of **Quaint**.
 
+# Prerequiste
+
+All experiments in this paper were run on a cluster of four DELL PowerEdge T64 servers. Each server has 40 CPU cores (Gold 6230 2.1G*2), 256G RAM, and 1.92TB SSD. All servers are connected via 56Gbps InfiniBand FDR to a Mellanox SX6036 switch. Each server is installed with `Ubuntu 20.04.6 LTS`, `OpenMPI 4.1.6` (required) and `UCX 1.15.0` (optional).
+
+To run the scripts in this branch, make sure to set up a server cluster with similar hardware specs, and write a hostile (see `hostfile-{*}` files in [`experiments/`](experiments)) to specify the information of your cluster.
 
 # Installation
 
@@ -33,7 +38,7 @@ cd ROSS-Network-Model
 git checkout experiments-metis
 ```
 
-(Optional) If you place the ROSS build folder (`build-ross`) to a diffrent path from the above instructions, then you need to modify `cmake/FindROSS.cmake` as follows to point to the ROSS build directory. **Otherwise, skip this step.**
+(Optional) If you place the ROSS build folder (`build-ross`) to a different path from the above instructions, then you need to modify `cmake/FindROSS.cmake` as follows to point to the ROSS build directory. **Otherwise, skip this step.**
 
 Modify the path of `HINTS` in the following lines to point to the build-ross directory.
 ```cmake
@@ -78,7 +83,7 @@ The detailed statistics of the simulation will be stored in `build/model/ross.cs
 
 All results have been collected manually to `experiments/results-scalability-*/`.
 
-Specifically, the correspondence between the scripts and the result folders are as follows:
+Specifically, the correspondence between the scripts and the result folders is as follows:
 
 | Script Name                                                              | Result Folder                                                                                                  | Figure Legend       |
 |--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|---------------------|

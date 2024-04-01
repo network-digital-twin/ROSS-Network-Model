@@ -8,11 +8,6 @@
 
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #define MAX_RECORDS 10000 // 10000 records to store statistics in a switch
-#define MEAN_TERMINAL_WAIT .005
-#define MEAN_SWITCH_PROCESS_WAIT .01
-// #define MEAN_SWITCH_PROCESS_WAIT 45.0
-
-#define MSG_PER_TERMINAL 500
 
 // ===================================
 // PACKET STRUCTS --------------------
@@ -233,9 +228,6 @@ typedef struct {
     record *records;
     unsigned long long records_capacity; // the max number of record the `records` can contain.
 
-//    double **total_delay;   // [src switch][priority] in ns
-//    double **jitter;  // [src switch][priority]
-//    int **count;  // number of received packets [src switch][priority]
 } stats;  // stats of the switch
 
 typedef struct {

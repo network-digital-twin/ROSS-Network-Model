@@ -10,19 +10,10 @@
 #include <string.h>
 #include <assert.h>
 
-#define BANDWIDTH 10 // 10Gbps, switch-to-switch bandwidth (1Gbps = 1000Mbps)
-#define PROPAGATION_DELAY 10000 // 10000ns, switch-to-switch propagation delay
 #define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
 #define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
 #define PROBE_ID 138 // used for debugging the switch with the specific ID
-#define SWITCH_TO_TERMINAL_PROPAGATION_DELAY 5000 // 5000ns
-#define SWITCH_TO_TERMINAL_BANDWIDTH 100 // 100Gbps (1Gbps = 1000Mbps)
-#define NUM_TO_SWITCH_PORTS 2 // Number of to-switch ports
 
-double total_pkt_size = 0;
-double start_time = 0;
-unsigned long red_packets = 0;
-unsigned long queue_full_packets = 0;
 
 //-------------Switch stuff-------------
 
@@ -30,14 +21,8 @@ void switch_init_config(switch_state *s, tw_lp *lp)
 {
     char *path = (char *) malloc(strlen(route_dir_path) + 50);
     sprintf(path, "%s/%llu.yaml", route_dir_path, lp->gid);
-    //printf("%s\n", path);
 
     s->conf = parseConfigFile(path, lp->gid);
-    //printf("----------------------------------------------------\n");
-    // some prints for validation
-    //printf("I am switch: printing my config and searching for next hop... \n");
-    //printConfig(s->conf);
-    //printf("----------------------------------------------------\n");
 
     free(path);
 
@@ -152,12 +137,6 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     if(self == final_dest) //You are the final dest switch to deliver the packet
     {
         bf->c0 = 1;  // use the bit field to record the "if" branch
-
-        // Calculate the delay of the event
-//        double injection_delay = calc_injection_delay(in_msg->packet.size_in_bytes, SWITCH_TO_TERMINAL_BANDWIDTH);
-//        double propagation_delay = SWITCH_TO_TERMINAL_PROPAGATION_DELAY;
-//        ts = injection_delay + propagation_delay;
-//        assert(ts >0);
 
         // Update statistics
         switch_update_stats(s->stats, in_msg->packet.pid, ts_now - in_msg->packet.send_time, 0);

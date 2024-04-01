@@ -80,11 +80,16 @@ All results have been collected manually to `experiments/results-scalability-*/`
 
 Specifically, the correspondence between the scripts and the result folders are as follows:
 
-| Script Name                                                              | Result Folder                                                                                                  |
-|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| [`run-baseline.sh`](experiments/run-baseline.sh)                         | [`results-scalability-metis`](experiments/results-scalability-metis)                                           |
-| [`run-edge-weights.sh`](experiments/run-edge-weights.sh)                 | [`results-scalability-metis-edge-weights`](experiments/results-scalability-metis-edge-weights)                 |
-| [`run-v-e-weights-pkt.sh`](experiments/run-v-e-weights-pkt.sh)           | [`results-scalability-metis-v-e-weights-pkt`](experiments/results-scalability-metis-v-e-weights-pkt)           |
-| [`run-vertex-weights-event.sh`](experiments/run-vertex-weights-event.sh) | [`results-scalability-metis-vertex-weights-event`](experiments/results-scalability-metis-vertex-weights-event) |
-| [`run-vertex-weights-pkt.sh`](experiments/run-vertex-weights-pkt.sh)     | [`results-scalability-metis-vertex-weights-pkt`](experiments/results-scalability-metis-vertex-weights-pkt)     |
+| Script Name                                                              | Result Folder                                                                                                  | Figure Legend       |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|---------------------|
+| [`run-baseline.sh`](experiments/run-baseline.sh)                         | [`results-scalability-metis`](experiments/results-scalability-metis)                                           | `no-weights`        |
+| [`run-edge-weights.sh`](experiments/run-edge-weights.sh)                 | [`results-scalability-metis-edge-weights`](experiments/results-scalability-metis-edge-weights)                 | `edge`              |
+| [`run-vertex-weights-event.sh`](experiments/run-vertex-weights-event.sh) | [`results-scalability-metis-vertex-weights-event`](experiments/results-scalability-metis-vertex-weights-event) | `vertex-event`      |
+| [`run-vertex-weights-pkt.sh`](experiments/run-vertex-weights-pkt.sh)     | [`results-scalability-metis-vertex-weights-pkt`](experiments/results-scalability-metis-vertex-weights-pkt)     | `vertex-throughput` |
+| [`run-v-e-weights-pkt.sh`](experiments/run-v-e-weights-pkt.sh)           | [`results-scalability-metis-v-e-weights-pkt`](experiments/results-scalability-metis-v-e-weights-pkt)           | `vertex+edge`       |
 
+<div class="half" style="text-align: center;">
+<img src="figures/scale-edge-3-2.3.jpg" height="180"/>
+<img src="figures/scale-weights-3-3.5.jpg" height="180"/>
+<img src="figures/scale-estimate-3-3.5.jpg" height="180"/>
+</div>

@@ -61,7 +61,7 @@ This branch is intended to evaluate the accuracy and efficiency of **Quaint** co
 First unzip the topology data:
 ```bash
 cd ../WL_generation/topologies/
-unzip WL_generation/topologies/final_topology_0.zip
+unzip final_topology_0.zip
 ```
 
 

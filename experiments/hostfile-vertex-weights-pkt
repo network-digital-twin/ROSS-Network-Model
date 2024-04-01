@@ -1,0 +1,5 @@
+# master
+asialab-generic-02 slots=16
+
+# worker
+asialab-generic-01 slots=16

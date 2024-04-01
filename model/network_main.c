@@ -37,11 +37,16 @@ tw_lptype model_lps[] =
 tw_lpid total_terminals= 1;
 tw_lpid total_switches = 5237;
 
-char *trace_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/1000ms/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
-char *route_dir_path = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
-char *home_dir = "/home/nan42/codes-dev/ROSS-Network-Model";
+char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
+char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/graph-for-metis-w-size.txt.part.8";
+char trace_file[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/lightweight/1000ms/trace_0_FLOW_THROUGHPUT-1250000__SIMULATION_TIME-1000000000__PAIRS_PER_SRC-1-0__MSG_SIZE-10000__PACKET_SIZE-1400__BANDWIDTH-1250000__PRIO_LEVELS-3";
+char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
+
+char *trace_path = trace_file;
+char *route_dir_path = route_path;
+char *home_dir = home_path;
+char *partition_file = partition_path;
 char *out_dir = NULL;
-char *partition_file = "/home/nan42/codes-dev/ROSS-Network-Model/partition/graph-for-metis-w-size.txt.part.8";
 
 int queue_capacity_0 = 5000000; // 5MB: ~3571 packets
 int queue_capacity_1 = 20000000; // 20MB: ~14285 packets
@@ -57,9 +62,10 @@ tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
 const tw_optdef model_opts[] = {
         TWOPT_GROUP("Network Model"),
         TWOPT_UINT("switches", total_switches, "Number of switches in simulation"),
-        TWOPT_CHAR("trace-path", trace_path, "Path to the trace file"),
-        TWOPT_CHAR("model-home", home_dir, "Path to the home directory of the model, used for determine output paths"),
-        TWOPT_UINT("route-dir-path", route_dir_path, "Path to the routing directory"),
+        TWOPT_CHAR("trace-path", trace_file, "Path to the trace file"),
+        TWOPT_CHAR("model-home", home_path, "Path to the home directory of the model, used for determine output paths"),
+        TWOPT_CHAR("partition-path", partition_path, "Path to the partition file"),
+        TWOPT_CHAR("route-path", route_path, "Path to the routing directory"),
         TWOPT_STIME("propagation-delay", propagation_delay, "Propagation delay in ns"),
         TWOPT_UINT("queue-capacity-0", queue_capacity_0, "Queue capacity (bytes) for priority 0"),
         TWOPT_UINT("queue-capacity-1", queue_capacity_1, "Queue capacity (bytes) for priority 1"),
@@ -141,11 +147,7 @@ int network_main(int argc, char** argv, char **env)
     tw_init(&argc, &argv);
 
     if(tw_nnodes() > 1) {
-
-        char str[150];
-        sprintf(str, "/home/nan42/codes-dev/ROSS-Network-Model/partition/graph-for-metis-w-v-e-weight-pkt.txt.part.%d", tw_nnodes());
-        partition_file=&str;
-	printf("%s\n",partition_file);
+	    printf("%s\n",partition_file);
     }
 #ifdef DEBUG
     // debug mode, need to attach a debugger after run

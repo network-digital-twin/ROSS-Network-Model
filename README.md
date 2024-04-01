@@ -74,5 +74,5 @@ cd ../../experiments/
 ```bash
 for i in 0 1 2 3 4; do ./run.sh | tee 2>&1 log-$i.txt; sleep 2; done
 ```
-All results were collected manually to `experiments/results-exp1`
+All results were collected manually to [`experiments/results-exp1`](experiments/results-exp1)
 

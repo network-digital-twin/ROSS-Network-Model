@@ -6,7 +6,7 @@ This branch contains the source code and data for the scalability evaluation of 
 
 All experiments in this paper were run on a cluster of four DELL PowerEdge T64 servers. Each server has 40 CPU cores (Gold 6230 2.1G*2), 256G RAM, and 1.92TB SSD. All servers are connected via 56Gbps InfiniBand FDR to a Mellanox SX6036 switch. Each server is installed with `Ubuntu 20.04.6 LTS`, `OpenMPI 4.1.6` (required) and `UCX 1.15.0` (optional).
 
-To run the scripts in this branch, make sure to set up a server cluster with similar hardware specs, and write a hostile (see `hostfile-{*}` files in [`experiments/`](experiments)) to specify the information of your cluster.
+To run the scripts in this branch, make sure to set up a server cluster with similar hardware specs, and write a hostfile (see `hostfile-{*}` files in [`experiments/`](experiments)) to specify the information of your cluster.
 
 # Installation
 

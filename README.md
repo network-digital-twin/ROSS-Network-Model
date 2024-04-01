@@ -4,7 +4,7 @@ This repo contains the source code of **Quaint** and the data used in the paper.
 
 **Code and data for the experiments conducted in the paper are stored in different branches**:
 - For the analysis of accuracy and efficiency compared to INET, see the branch [`experiments-INET`](https://github.com/network-digital-twin/ROSS-Network-Model/tree/experiments-INET)
-- For the scalability characterisation of **Quaint**, see the branch [`main-partitioning`](https://github.com/network-digital-twin/ROSS-Network-Model/tree/main-partitioning)
+- For the scalability characterisation of **Quaint**, see the branch [`experiments-metis`](https://github.com/network-digital-twin/ROSS-Network-Model/tree/experiments-metis)
 
 # Installation
 

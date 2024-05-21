@@ -1,6 +1,10 @@
 model/data/*
 cmake-build-debug/*
 .idea/*
+.vscode/*
 *.DS_Store*
 WL_generation/topologies/*
-experiment/*
+WL_generation/traces/*
+experiments/*
+output/*
+build/*

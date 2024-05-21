@@ -12,11 +12,14 @@ void switch_init_stats(switch_state *s, tw_lp *lp) {
     s->stats->num_packets_sent = 0;
     s->stats->received = 0;
     s->stats->records_capacity = MAX_RECORDS;
+#ifdef TRACE
     s->stats->records = (record *)malloc(sizeof(record) * s->stats->records_capacity);
-
+#endif
+    s->stats->events = 0;
 }
 
 void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned char drop) {
+#ifdef TRACE
     unsigned long long index = st->num_packets_recvd + st->num_packets_dropped;
     if(index + 1 >= st->records_capacity) {
         st->records_capacity *= 2;
@@ -29,6 +32,7 @@ void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned ch
     st->records[index].pid = pid;
     st->records[index].delay = delay;
     st->records[index].drop = drop;
+#endif
     if(drop) {
         st->num_packets_dropped++;
     } else {
@@ -36,21 +40,27 @@ void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned ch
     }
 }
 
-void switch_update_stats_reverse(stats *st) {
+void switch_update_stats_reverse(stats *st, unsigned char drop) {
     // TODO: notice here we do not reverse the memory allocation, because it will be too costly.
+#ifdef TRACE
     unsigned long long index = st->num_packets_recvd + st->num_packets_dropped - 1;
-    if (st->records[index].drop) {
+#endif
+    if (drop) {
         st->num_packets_dropped--;
     } else {
         st->num_packets_recvd--;
     }
+#ifdef TRACE
     st->records[index].pid = -1;
     st->records[index].delay = -1;
     st->records[index].drop = -1;
+#endif
 }
 
 void switch_free_stats(switch_state *s) {
+#ifdef TRACE
     free(s->stats->records);
+#endif
     free(s->stats);
 }
 

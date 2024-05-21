@@ -12,8 +12,8 @@
 
 #define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
 #define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
-#define PROBE_ID 138 // used for debugging the switch with the specific ID
-
+#define PROBE_ID 1 // used for debugging the switch with the specific ID
+#define MEAN_WAIT_TIME 112 // in nanosecond, this is the mean inter-arrival time of two packets (100Gbps; 1400B per packet)
 
 //-------------Switch stuff-------------
 
@@ -108,8 +108,17 @@ void switch_init (switch_state *s, tw_lp *lp)
 
 void switch_prerun (switch_state *s, tw_lp *lp)
 {
-     tw_lpid self = lp->gid;
-     // printf("%d: I am a switch\n",self);
+    tw_lpid self = lp->gid;
+    //printf("%d: I am a switch\n",self);
+
+    if (strcmp(s->conf->type, "Access") == 0) {
+        tw_stime ts = tw_rand_exponential(lp->rng, MEAN_WAIT_TIME) + 1;
+        tw_event *e = tw_event_new(self, ts, lp);
+        tw_message *kickoff_msg = tw_event_data(e);
+        kickoff_msg->type = KICKOFF;
+        tw_event_send(e);
+    }
+
 }
 
 void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
@@ -334,7 +343,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
 
     // Final hop
     if (bf->c0) {
-        switch_update_stats_reverse(s->stats);
+        switch_update_stats_reverse(s->stats, 0);
         return;
     }
     s->stats->received--;
@@ -354,7 +363,7 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
 
     // Packet dropped
     if (bf->c1) {
-        switch_update_stats_reverse(s->stats);
+        switch_update_stats_reverse(s->stats, 1);
         return;
     }
 
@@ -466,6 +475,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
             REDdropper_time_update(dropper, ts_now);  /////// STATE CHANGE
         }
 
+        s->stats->num_packets_sent++;
         // For reverse computation
         in_msg->qos_state_snapshot.port_available_time_rc = port_av_time;
         // Update port available time
@@ -523,6 +533,7 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
         }
         sp_update_reverse(scheduler, &in_msg->qos_state_snapshot.scheduler_state);
         s->ports_available_time[out_port] = in_msg->qos_state_snapshot.port_available_time_rc;
+        s->stats->num_packets_sent--;
 
     }
     if(bf->c1) {
@@ -533,11 +544,52 @@ void handle_send_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 
 }
 
+// Schedule an ARRIVE event and a new KICKOFF event
+void handle_kickoff_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
+    tw_lpid self = lp->gid;
+    tw_lpid dest = total_switches - self; //TODO: now here is hard coded
+    tw_stime ts_now = tw_now(lp);
+    tw_stime ts = 1;
+    int priority = tw_rand_integer(lp->rng, 0, 2);
+
+    // Generate an ARRIVE event to myself
+    tw_event *e = tw_event_new(self, ts, lp);
+    tw_message *out_msg =tw_event_data (e);
+    out_msg->packet.pid = 0;
+    out_msg->packet.send_time = ts_now + ts;
+    out_msg->packet.src = self;
+    out_msg->packet.dest = dest;
+    out_msg->packet.prev_hop = -1;
+    out_msg->packet.next_hop = -1;
+    out_msg->packet.type = priority;
+    out_msg->packet.size_in_bytes = 1400;
+    out_msg->type = ARRIVE;
+    out_msg->port_id = -1;  // this variable is of no use here, so set it to -1.
+    tw_event_send(e);
+
+    // Generate a new KICKOFF event to myself
+    ts = MEAN_WAIT_TIME;
+    tw_event *e_kick = tw_event_new(self, ts, lp);
+    tw_message *kickoff_msg = tw_event_data(e_kick);
+    kickoff_msg->type = KICKOFF;
+    tw_event_send(e_kick);
+    if(self==PROBE_ID) {
+        printf("[%llu]interval: %f\n", self, ts);
+    }
+
+}
+
+void handle_kickoff_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
+    tw_rand_reverse_unif(lp->rng);
+}
+
+
 
 void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
 
     *(int *) bf = (int) 0;  // initialise the bit field. https://github.com/ROSS-org/ROSS/wiki/Tips-&-Tricks
+    s->stats->events++;
     switch (in_msg->type) {
         case ARRIVE :
         {
@@ -547,6 +599,11 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
         case SEND :
         {
             handle_send_event(s,bf,in_msg,lp);
+            break;
+        }
+        case KICKOFF:
+        {
+            handle_kickoff_event(s,bf,in_msg,lp);
             break;
         }
         default :
@@ -565,6 +622,7 @@ void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp 
 void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
     //printf("REVERSE[%llu][%f]msg_type: %d\n", lp->gid, tw_now(lp), in_msg->type);
+    s->stats->events--;
     switch (in_msg->type) {
         case ARRIVE :
         {
@@ -574,6 +632,11 @@ void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_
         case SEND :
         {
             handle_send_event_rc(s, bf, in_msg, lp);
+            break;
+        }
+        case KICKOFF:
+        {
+            handle_kickoff_event_rc(s,bf,in_msg,lp);
             break;
         }
         default :
@@ -593,17 +656,23 @@ void switch_final(switch_state *s, tw_lp *lp)
 //        queue_destroy(&s->qos_queue_list[i]);
 //    }
 //    free(s->qos_queue_list);
-    if(s->stats->num_packets_dropped > 0) {
-        printf("%s Switch %llu:\t final_dest:%llu, R: %llu, S: %llu, D: %llu\n",
-               s->conf->type, self, s->stats->num_packets_recvd,
+    //if(s->stats->num_packets_dropped > 0) {
+        printf("%s Switch %llu:\t final_dest:%llu, R: %llu, S: %llu, D: %llu, events: %llu\n",
+               s->conf->type, 
+               self, 
+               s->stats->num_packets_recvd,
                s->stats->received,
                s->stats->num_packets_sent,
-               s->stats->num_packets_dropped);
+               s->stats->num_packets_dropped,
+               s->stats->events
+               );
 
-    }
+    //}
 
     print_switch_stats(s, lp);
+#ifdef TRACE
     write_switch_stats_to_file(s, lp);
+#endif
     switch_free_stats(s);
 
 }

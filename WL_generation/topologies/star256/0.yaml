@@ -1,0 +1,1029 @@
+ports:
+  port0: 100000000000
+  port1: 100000000000
+  port10: 100000000000
+  port100: 100000000000
+  port101: 100000000000
+  port102: 100000000000
+  port103: 100000000000
+  port104: 100000000000
+  port105: 100000000000
+  port106: 100000000000
+  port107: 100000000000
+  port108: 100000000000
+  port109: 100000000000
+  port11: 100000000000
+  port110: 100000000000
+  port111: 100000000000
+  port112: 100000000000
+  port113: 100000000000
+  port114: 100000000000
+  port115: 100000000000
+  port116: 100000000000
+  port117: 100000000000
+  port118: 100000000000
+  port119: 100000000000
+  port12: 100000000000
+  port120: 100000000000
+  port121: 100000000000
+  port122: 100000000000
+  port123: 100000000000
+  port124: 100000000000
+  port125: 100000000000
+  port126: 100000000000
+  port127: 100000000000
+  port128: 100000000000
+  port129: 100000000000
+  port13: 100000000000
+  port130: 100000000000
+  port131: 100000000000
+  port132: 100000000000
+  port133: 100000000000
+  port134: 100000000000
+  port135: 100000000000
+  port136: 100000000000
+  port137: 100000000000
+  port138: 100000000000
+  port139: 100000000000
+  port14: 100000000000
+  port140: 100000000000
+  port141: 100000000000
+  port142: 100000000000
+  port143: 100000000000
+  port144: 100000000000
+  port145: 100000000000
+  port146: 100000000000
+  port147: 100000000000
+  port148: 100000000000
+  port149: 100000000000
+  port15: 100000000000
+  port150: 100000000000
+  port151: 100000000000
+  port152: 100000000000
+  port153: 100000000000
+  port154: 100000000000
+  port155: 100000000000
+  port156: 100000000000
+  port157: 100000000000
+  port158: 100000000000
+  port159: 100000000000
+  port16: 100000000000
+  port160: 100000000000
+  port161: 100000000000
+  port162: 100000000000
+  port163: 100000000000
+  port164: 100000000000
+  port165: 100000000000
+  port166: 100000000000
+  port167: 100000000000
+  port168: 100000000000
+  port169: 100000000000
+  port17: 100000000000
+  port170: 100000000000
+  port171: 100000000000
+  port172: 100000000000
+  port173: 100000000000
+  port174: 100000000000
+  port175: 100000000000
+  port176: 100000000000
+  port177: 100000000000
+  port178: 100000000000
+  port179: 100000000000
+  port18: 100000000000
+  port180: 100000000000
+  port181: 100000000000
+  port182: 100000000000
+  port183: 100000000000
+  port184: 100000000000
+  port185: 100000000000
+  port186: 100000000000
+  port187: 100000000000
+  port188: 100000000000
+  port189: 100000000000
+  port19: 100000000000
+  port190: 100000000000
+  port191: 100000000000
+  port192: 100000000000
+  port193: 100000000000
+  port194: 100000000000
+  port195: 100000000000
+  port196: 100000000000
+  port197: 100000000000
+  port198: 100000000000
+  port199: 100000000000
+  port2: 100000000000
+  port20: 100000000000
+  port200: 100000000000
+  port201: 100000000000
+  port202: 100000000000
+  port203: 100000000000
+  port204: 100000000000
+  port205: 100000000000
+  port206: 100000000000
+  port207: 100000000000
+  port208: 100000000000
+  port209: 100000000000
+  port21: 100000000000
+  port210: 100000000000
+  port211: 100000000000
+  port212: 100000000000
+  port213: 100000000000
+  port214: 100000000000
+  port215: 100000000000
+  port216: 100000000000
+  port217: 100000000000
+  port218: 100000000000
+  port219: 100000000000
+  port22: 100000000000
+  port220: 100000000000
+  port221: 100000000000
+  port222: 100000000000
+  port223: 100000000000
+  port224: 100000000000
+  port225: 100000000000
+  port226: 100000000000
+  port227: 100000000000
+  port228: 100000000000
+  port229: 100000000000
+  port23: 100000000000
+  port230: 100000000000
+  port231: 100000000000
+  port232: 100000000000
+  port233: 100000000000
+  port234: 100000000000
+  port235: 100000000000
+  port236: 100000000000
+  port237: 100000000000
+  port238: 100000000000
+  port239: 100000000000
+  port24: 100000000000
+  port240: 100000000000
+  port241: 100000000000
+  port242: 100000000000
+  port243: 100000000000
+  port244: 100000000000
+  port245: 100000000000
+  port246: 100000000000
+  port247: 100000000000
+  port248: 100000000000
+  port249: 100000000000
+  port25: 100000000000
+  port250: 100000000000
+  port251: 100000000000
+  port252: 100000000000
+  port253: 100000000000
+  port254: 100000000000
+  port255: 100000000000
+  port26: 100000000000
+  port27: 100000000000
+  port28: 100000000000
+  port29: 100000000000
+  port3: 100000000000
+  port30: 100000000000
+  port31: 100000000000
+  port32: 100000000000
+  port33: 100000000000
+  port34: 100000000000
+  port35: 100000000000
+  port36: 100000000000
+  port37: 100000000000
+  port38: 100000000000
+  port39: 100000000000
+  port4: 100000000000
+  port40: 100000000000
+  port41: 100000000000
+  port42: 100000000000
+  port43: 100000000000
+  port44: 100000000000
+  port45: 100000000000
+  port46: 100000000000
+  port47: 100000000000
+  port48: 100000000000
+  port49: 100000000000
+  port5: 100000000000
+  port50: 100000000000
+  port51: 100000000000
+  port52: 100000000000
+  port53: 100000000000
+  port54: 100000000000
+  port55: 100000000000
+  port56: 100000000000
+  port57: 100000000000
+  port58: 100000000000
+  port59: 100000000000
+  port6: 100000000000
+  port60: 100000000000
+  port61: 100000000000
+  port62: 100000000000
+  port63: 100000000000
+  port64: 100000000000
+  port65: 100000000000
+  port66: 100000000000
+  port67: 100000000000
+  port68: 100000000000
+  port69: 100000000000
+  port7: 100000000000
+  port70: 100000000000
+  port71: 100000000000
+  port72: 100000000000
+  port73: 100000000000
+  port74: 100000000000
+  port75: 100000000000
+  port76: 100000000000
+  port77: 100000000000
+  port78: 100000000000
+  port79: 100000000000
+  port8: 100000000000
+  port80: 100000000000
+  port81: 100000000000
+  port82: 100000000000
+  port83: 100000000000
+  port84: 100000000000
+  port85: 100000000000
+  port86: 100000000000
+  port87: 100000000000
+  port88: 100000000000
+  port89: 100000000000
+  port9: 100000000000
+  port90: 100000000000
+  port91: 100000000000
+  port92: 100000000000
+  port93: 100000000000
+  port94: 100000000000
+  port95: 100000000000
+  port96: 100000000000
+  port97: 100000000000
+  port98: 100000000000
+  port99: 100000000000
+qos: null
+routing:
+  1:
+    next_hop: 1
+    port: port0
+  2:
+    next_hop: 2
+    port: port1
+  3:
+    next_hop: 3
+    port: port2
+  4:
+    next_hop: 4
+    port: port3
+  5:
+    next_hop: 5
+    port: port4
+  6:
+    next_hop: 6
+    port: port5
+  7:
+    next_hop: 7
+    port: port6
+  8:
+    next_hop: 8
+    port: port7
+  9:
+    next_hop: 9
+    port: port8
+  10:
+    next_hop: 10
+    port: port9
+  11:
+    next_hop: 11
+    port: port10
+  12:
+    next_hop: 12
+    port: port11
+  13:
+    next_hop: 13
+    port: port12
+  14:
+    next_hop: 14
+    port: port13
+  15:
+    next_hop: 15
+    port: port14
+  16:
+    next_hop: 16
+    port: port15
+  17:
+    next_hop: 17
+    port: port16
+  18:
+    next_hop: 18
+    port: port17
+  19:
+    next_hop: 19
+    port: port18
+  20:
+    next_hop: 20
+    port: port19
+  21:
+    next_hop: 21
+    port: port20
+  22:
+    next_hop: 22
+    port: port21
+  23:
+    next_hop: 23
+    port: port22
+  24:
+    next_hop: 24
+    port: port23
+  25:
+    next_hop: 25
+    port: port24
+  26:
+    next_hop: 26
+    port: port25
+  27:
+    next_hop: 27
+    port: port26
+  28:
+    next_hop: 28
+    port: port27
+  29:
+    next_hop: 29
+    port: port28
+  30:
+    next_hop: 30
+    port: port29
+  31:
+    next_hop: 31
+    port: port30
+  32:
+    next_hop: 32
+    port: port31
+  33:
+    next_hop: 33
+    port: port32
+  34:
+    next_hop: 34
+    port: port33
+  35:
+    next_hop: 35
+    port: port34
+  36:
+    next_hop: 36
+    port: port35
+  37:
+    next_hop: 37
+    port: port36
+  38:
+    next_hop: 38
+    port: port37
+  39:
+    next_hop: 39
+    port: port38
+  40:
+    next_hop: 40
+    port: port39
+  41:
+    next_hop: 41
+    port: port40
+  42:
+    next_hop: 42
+    port: port41
+  43:
+    next_hop: 43
+    port: port42
+  44:
+    next_hop: 44
+    port: port43
+  45:
+    next_hop: 45
+    port: port44
+  46:
+    next_hop: 46
+    port: port45
+  47:
+    next_hop: 47
+    port: port46
+  48:
+    next_hop: 48
+    port: port47
+  49:
+    next_hop: 49
+    port: port48
+  50:
+    next_hop: 50
+    port: port49
+  51:
+    next_hop: 51
+    port: port50
+  52:
+    next_hop: 52
+    port: port51
+  53:
+    next_hop: 53
+    port: port52
+  54:
+    next_hop: 54
+    port: port53
+  55:
+    next_hop: 55
+    port: port54
+  56:
+    next_hop: 56
+    port: port55
+  57:
+    next_hop: 57
+    port: port56
+  58:
+    next_hop: 58
+    port: port57
+  59:
+    next_hop: 59
+    port: port58
+  60:
+    next_hop: 60
+    port: port59
+  61:
+    next_hop: 61
+    port: port60
+  62:
+    next_hop: 62
+    port: port61
+  63:
+    next_hop: 63
+    port: port62
+  64:
+    next_hop: 64
+    port: port63
+  65:
+    next_hop: 65
+    port: port64
+  66:
+    next_hop: 66
+    port: port65
+  67:
+    next_hop: 67
+    port: port66
+  68:
+    next_hop: 68
+    port: port67
+  69:
+    next_hop: 69
+    port: port68
+  70:
+    next_hop: 70
+    port: port69
+  71:
+    next_hop: 71
+    port: port70
+  72:
+    next_hop: 72
+    port: port71
+  73:
+    next_hop: 73
+    port: port72
+  74:
+    next_hop: 74
+    port: port73
+  75:
+    next_hop: 75
+    port: port74
+  76:
+    next_hop: 76
+    port: port75
+  77:
+    next_hop: 77
+    port: port76
+  78:
+    next_hop: 78
+    port: port77
+  79:
+    next_hop: 79
+    port: port78
+  80:
+    next_hop: 80
+    port: port79
+  81:
+    next_hop: 81
+    port: port80
+  82:
+    next_hop: 82
+    port: port81
+  83:
+    next_hop: 83
+    port: port82
+  84:
+    next_hop: 84
+    port: port83
+  85:
+    next_hop: 85
+    port: port84
+  86:
+    next_hop: 86
+    port: port85
+  87:
+    next_hop: 87
+    port: port86
+  88:
+    next_hop: 88
+    port: port87
+  89:
+    next_hop: 89
+    port: port88
+  90:
+    next_hop: 90
+    port: port89
+  91:
+    next_hop: 91
+    port: port90
+  92:
+    next_hop: 92
+    port: port91
+  93:
+    next_hop: 93
+    port: port92
+  94:
+    next_hop: 94
+    port: port93
+  95:
+    next_hop: 95
+    port: port94
+  96:
+    next_hop: 96
+    port: port95
+  97:
+    next_hop: 97
+    port: port96
+  98:
+    next_hop: 98
+    port: port97
+  99:
+    next_hop: 99
+    port: port98
+  100:
+    next_hop: 100
+    port: port99
+  101:
+    next_hop: 101
+    port: port100
+  102:
+    next_hop: 102
+    port: port101
+  103:
+    next_hop: 103
+    port: port102
+  104:
+    next_hop: 104
+    port: port103
+  105:
+    next_hop: 105
+    port: port104
+  106:
+    next_hop: 106
+    port: port105
+  107:
+    next_hop: 107
+    port: port106
+  108:
+    next_hop: 108
+    port: port107
+  109:
+    next_hop: 109
+    port: port108
+  110:
+    next_hop: 110
+    port: port109
+  111:
+    next_hop: 111
+    port: port110
+  112:
+    next_hop: 112
+    port: port111
+  113:
+    next_hop: 113
+    port: port112
+  114:
+    next_hop: 114
+    port: port113
+  115:
+    next_hop: 115
+    port: port114
+  116:
+    next_hop: 116
+    port: port115
+  117:
+    next_hop: 117
+    port: port116
+  118:
+    next_hop: 118
+    port: port117
+  119:
+    next_hop: 119
+    port: port118
+  120:
+    next_hop: 120
+    port: port119
+  121:
+    next_hop: 121
+    port: port120
+  122:
+    next_hop: 122
+    port: port121
+  123:
+    next_hop: 123
+    port: port122
+  124:
+    next_hop: 124
+    port: port123
+  125:
+    next_hop: 125
+    port: port124
+  126:
+    next_hop: 126
+    port: port125
+  127:
+    next_hop: 127
+    port: port126
+  128:
+    next_hop: 128
+    port: port127
+  129:
+    next_hop: 129
+    port: port128
+  130:
+    next_hop: 130
+    port: port129
+  131:
+    next_hop: 131
+    port: port130
+  132:
+    next_hop: 132
+    port: port131
+  133:
+    next_hop: 133
+    port: port132
+  134:
+    next_hop: 134
+    port: port133
+  135:
+    next_hop: 135
+    port: port134
+  136:
+    next_hop: 136
+    port: port135
+  137:
+    next_hop: 137
+    port: port136
+  138:
+    next_hop: 138
+    port: port137
+  139:
+    next_hop: 139
+    port: port138
+  140:
+    next_hop: 140
+    port: port139
+  141:
+    next_hop: 141
+    port: port140
+  142:
+    next_hop: 142
+    port: port141
+  143:
+    next_hop: 143
+    port: port142
+  144:
+    next_hop: 144
+    port: port143
+  145:
+    next_hop: 145
+    port: port144
+  146:
+    next_hop: 146
+    port: port145
+  147:
+    next_hop: 147
+    port: port146
+  148:
+    next_hop: 148
+    port: port147
+  149:
+    next_hop: 149
+    port: port148
+  150:
+    next_hop: 150
+    port: port149
+  151:
+    next_hop: 151
+    port: port150
+  152:
+    next_hop: 152
+    port: port151
+  153:
+    next_hop: 153
+    port: port152
+  154:
+    next_hop: 154
+    port: port153
+  155:
+    next_hop: 155
+    port: port154
+  156:
+    next_hop: 156
+    port: port155
+  157:
+    next_hop: 157
+    port: port156
+  158:
+    next_hop: 158
+    port: port157
+  159:
+    next_hop: 159
+    port: port158
+  160:
+    next_hop: 160
+    port: port159
+  161:
+    next_hop: 161
+    port: port160
+  162:
+    next_hop: 162
+    port: port161
+  163:
+    next_hop: 163
+    port: port162
+  164:
+    next_hop: 164
+    port: port163
+  165:
+    next_hop: 165
+    port: port164
+  166:
+    next_hop: 166
+    port: port165
+  167:
+    next_hop: 167
+    port: port166
+  168:
+    next_hop: 168
+    port: port167
+  169:
+    next_hop: 169
+    port: port168
+  170:
+    next_hop: 170
+    port: port169
+  171:
+    next_hop: 171
+    port: port170
+  172:
+    next_hop: 172
+    port: port171
+  173:
+    next_hop: 173
+    port: port172
+  174:
+    next_hop: 174
+    port: port173
+  175:
+    next_hop: 175
+    port: port174
+  176:
+    next_hop: 176
+    port: port175
+  177:
+    next_hop: 177
+    port: port176
+  178:
+    next_hop: 178
+    port: port177
+  179:
+    next_hop: 179
+    port: port178
+  180:
+    next_hop: 180
+    port: port179
+  181:
+    next_hop: 181
+    port: port180
+  182:
+    next_hop: 182
+    port: port181
+  183:
+    next_hop: 183
+    port: port182
+  184:
+    next_hop: 184
+    port: port183
+  185:
+    next_hop: 185
+    port: port184
+  186:
+    next_hop: 186
+    port: port185
+  187:
+    next_hop: 187
+    port: port186
+  188:
+    next_hop: 188
+    port: port187
+  189:
+    next_hop: 189
+    port: port188
+  190:
+    next_hop: 190
+    port: port189
+  191:
+    next_hop: 191
+    port: port190
+  192:
+    next_hop: 192
+    port: port191
+  193:
+    next_hop: 193
+    port: port192
+  194:
+    next_hop: 194
+    port: port193
+  195:
+    next_hop: 195
+    port: port194
+  196:
+    next_hop: 196
+    port: port195
+  197:
+    next_hop: 197
+    port: port196
+  198:
+    next_hop: 198
+    port: port197
+  199:
+    next_hop: 199
+    port: port198
+  200:
+    next_hop: 200
+    port: port199
+  201:
+    next_hop: 201
+    port: port200
+  202:
+    next_hop: 202
+    port: port201
+  203:
+    next_hop: 203
+    port: port202
+  204:
+    next_hop: 204
+    port: port203
+  205:
+    next_hop: 205
+    port: port204
+  206:
+    next_hop: 206
+    port: port205
+  207:
+    next_hop: 207
+    port: port206
+  208:
+    next_hop: 208
+    port: port207
+  209:
+    next_hop: 209
+    port: port208
+  210:
+    next_hop: 210
+    port: port209
+  211:
+    next_hop: 211
+    port: port210
+  212:
+    next_hop: 212
+    port: port211
+  213:
+    next_hop: 213
+    port: port212
+  214:
+    next_hop: 214
+    port: port213
+  215:
+    next_hop: 215
+    port: port214
+  216:
+    next_hop: 216
+    port: port215
+  217:
+    next_hop: 217
+    port: port216
+  218:
+    next_hop: 218
+    port: port217
+  219:
+    next_hop: 219
+    port: port218
+  220:
+    next_hop: 220
+    port: port219
+  221:
+    next_hop: 221
+    port: port220
+  222:
+    next_hop: 222
+    port: port221
+  223:
+    next_hop: 223
+    port: port222
+  224:
+    next_hop: 224
+    port: port223
+  225:
+    next_hop: 225
+    port: port224
+  226:
+    next_hop: 226
+    port: port225
+  227:
+    next_hop: 227
+    port: port226
+  228:
+    next_hop: 228
+    port: port227
+  229:
+    next_hop: 229
+    port: port228
+  230:
+    next_hop: 230
+    port: port229
+  231:
+    next_hop: 231
+    port: port230
+  232:
+    next_hop: 232
+    port: port231
+  233:
+    next_hop: 233
+    port: port232
+  234:
+    next_hop: 234
+    port: port233
+  235:
+    next_hop: 235
+    port: port234
+  236:
+    next_hop: 236
+    port: port235
+  237:
+    next_hop: 237
+    port: port236
+  238:
+    next_hop: 238
+    port: port237
+  239:
+    next_hop: 239
+    port: port238
+  240:
+    next_hop: 240
+    port: port239
+  241:
+    next_hop: 241
+    port: port240
+  242:
+    next_hop: 242
+    port: port241
+  243:
+    next_hop: 243
+    port: port242
+  244:
+    next_hop: 244
+    port: port243
+  245:
+    next_hop: 245
+    port: port244
+  246:
+    next_hop: 246
+    port: port245
+  247:
+    next_hop: 247
+    port: port246
+  248:
+    next_hop: 248
+    port: port247
+  249:
+    next_hop: 249
+    port: port248
+  250:
+    next_hop: 250
+    port: port249
+  251:
+    next_hop: 251
+    port: port250
+  252:
+    next_hop: 252
+    port: port251
+  253:
+    next_hop: 253
+    port: port252
+  254:
+    next_hop: 254
+    port: port253
+  255:
+    next_hop: 255
+    port: port254
+  256:
+    next_hop: 256
+    port: port255
+terminals: null
+type: Core

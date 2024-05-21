@@ -228,6 +228,7 @@ typedef struct {
     unsigned long long num_packets_recvd; // the packet whose final dest is this switch
     record *records;
     unsigned long long records_capacity; // the max number of record the `records` can contain.
+    unsigned long long events;
 
 //    double **total_delay;   // [src switch][priority] in ns
 //    double **jitter;  // [src switch][priority]
@@ -283,7 +284,7 @@ extern void switch_init_stats(switch_state *s, tw_lp *lp);
 extern void switch_free_stats(switch_state *s);
 extern void write_switch_stats_to_file(const switch_state *s, tw_lp *lp);
 extern void switch_update_stats(stats *st, unsigned long pid, double delay, unsigned char drop);
-extern void switch_update_stats_reverse(stats *st);
+extern void switch_update_stats_reverse(stats *st, unsigned char drop);
 
 //DRIVER -----------------------------
 

@@ -2,3 +2,5 @@ model/data/*
 cmake-build-debug/*
 .idea/*
 *.DS_Store*
+WL_generation/topologies/*
+experiment/*

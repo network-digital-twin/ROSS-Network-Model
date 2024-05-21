@@ -104,13 +104,15 @@ void init_partition(char *filename, tw_lpid total_lps) {
         pe_to_num_lps[peid]++;
     }
     assert(lpid + 1 + total_terminals == total_lps);
-    assert(total_terminals == 1); // Now this function only works for one ``abstract'' terminal
+    assert(total_terminals <= 1); // Now this function only works for one ``abstract'' terminal
 
     // Assign the terminal LP to the last PE
-    lpid++;
-    lp_to_pe[lpid]=peid;
-    lp_to_lid[lpid]=pe_to_num_lps[peid];
-    pe_to_num_lps[peid]++;
+    if(total_terminals == 1) {
+        lpid++;
+        lp_to_pe[lpid]=peid;
+        lp_to_lid[lpid]=pe_to_num_lps[peid];
+        pe_to_num_lps[peid]++;
+    }
 
     // Store all local GIDs into local_gids.
     tw_lpid num_local_lps = pe_to_num_lps[g_tw_mynode];

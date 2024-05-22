@@ -300,6 +300,9 @@ extern void switch_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg,
 extern void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
 extern void switch_final(switch_state *s, tw_lp *lp);
 extern void switch_commit(switch_state *s, tw_bf *bf, tw_message *m, tw_lp *lp);
+extern void kickoff(switch_state *s, tw_lp *lp);
+extern void handle_kickoff_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
+extern void handle_kickoff_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp);
 
 //MAIN -----------------------------
 

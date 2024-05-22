@@ -31,6 +31,7 @@ SET(network_srcs
 		util/config_parser.c
 		util/stats.c
 		qos/REDdropper.c
+		traffic/traffic_generation.c
 )
 
 

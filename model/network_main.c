@@ -39,7 +39,7 @@ tw_lpid total_switches = 257;
 
 char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
 char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/star256/star256.txt.part.1";
-char trace_file[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/traces/star256/trace_star256workload";
+char trace_file[1024] = "";
 char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/star256";
 
 char *trace_path = trace_file;
@@ -88,10 +88,8 @@ void displayModelSettings()
         printf("\t nnodes: %i\n", tw_nnodes());
         printf("\t g_tw_nlp: %llu\n", g_tw_nlp);
         printf("\t custom_LPs_per_pe: %i\n\n", num_LPs_per_pe);
-
         printf("\t total_terminals: %llu\n", total_terminals);
         printf("\t total_switches: %llu\n\n", total_switches);
-
 
         for (int i = 0; i < 30; i++)
         {

@@ -35,12 +35,12 @@ tw_lptype model_lps[] =
 //Define command line arguments default values
 
 tw_lpid total_terminals= 0;
-tw_lpid total_switches = 257;
+tw_lpid total_switches = 5237;
 
 char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
 char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/star256/star256.txt.part.1";
 char trace_file[1024] = "";
-char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/star256";
+char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
 
 char *trace_path = trace_file;
 char *route_dir_path = route_path;
@@ -169,11 +169,21 @@ int network_main(int argc, char** argv, char **env)
     // tw_nnodes() : number of nodes/processors defined
     // g_tw_mynode : my node/processor id (mpi rank)
 
-    //Custom Mapping
+    tw_lpid total_lps = total_terminals + total_switches;
 
-    g_tw_mapping = CUSTOM;
-    g_tw_custom_initial_mapping = &custom_mapping_setup;
-    g_tw_custom_lp_global_to_local_map = &custom_mapping_lpgid_to_local;;
+    if(tw_nnodes() > 1) {
+        //Custom Mapping
+        g_tw_mapping = CUSTOM;
+        g_tw_custom_initial_mapping = &custom_mapping_setup;
+        g_tw_custom_lp_global_to_local_map = &custom_mapping_lpgid_to_local;
+        
+        // figure out how many LPs are on this PE
+        init_partition(partition_file, total_lps);
+        num_LPs_per_pe = pe_to_num_lps[g_tw_mynode];
+    } else {
+        num_LPs_per_pe = total_lps;
+        lp_to_pe = (tw_lpid *)calloc(total_lps, sizeof(tw_lpid));
+    }
 
     //Useful ROSS variables (set from command line)
     // g_tw_events_per_pe
@@ -182,12 +192,8 @@ int network_main(int argc, char** argv, char **env)
     // g_tw_nkp
     // g_tw_synchronization_protocol
 
-    tw_lpid total_lps = total_terminals + total_switches;
 
-    // figure out how many LPs are on this PE
 
-    init_partition(partition_file, total_lps);
-    num_LPs_per_pe = pe_to_num_lps[g_tw_mynode];
 
 
     g_tw_lookahead = 1;

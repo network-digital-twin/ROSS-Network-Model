@@ -16,7 +16,7 @@ void kickoff(switch_state * s, tw_lp * lp) {
 // Schedule an ARRIVE event and a new KICKOFF event
 void handle_kickoff_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
     tw_lpid self = lp->gid;
-    tw_lpid dest = total_switches - self; //TODO: now here is hard coded
+    tw_lpid dest = total_switches - self - 1; //TODO: now here is hard coded
     tw_stime ts_now = tw_now(lp);
     tw_stime ts = 1;
     int priority = tw_rand_integer(lp->rng, 0, 2);

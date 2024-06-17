@@ -38,7 +38,7 @@ void token_bucket_consume(token_bucket *bucket, const packet *pkt, tw_stime curr
 
     // Calculate the number of newly generated tokens
     assert(bucket->rate < INT_MAX);  // if rate is too large, the following line of calculation may lose precision
-    num_new_tokens = floor(bucket->rate * (current_time - bucket->last_update_time));
+    num_new_tokens = (int)(bucket->rate * (current_time - bucket->last_update_time));
     if(num_new_tokens > 0) {
         // If the time difference is too small, there might be no token due to the floor() function
         // Then we do not regard this as an "update"
@@ -77,7 +77,8 @@ tw_stime token_bucket_next_available_time(token_bucket *bucket, int packet_size)
         // So abs(1 - bucket->tokens) will not be too large.
         assert(packet_size - bucket->tokens< INT_MAX);
         // Return the time (ns) it takes to accumulate to packet_size token
-        return bucket->last_update_time + (double)(packet_size * 8 - bucket->tokens) / bucket->rate;
+        tw_stime extra_time = (double)(packet_size * 8 - bucket->tokens) / bucket->rate;
+        return bucket->last_update_time + extra_time;
     }
 }
 

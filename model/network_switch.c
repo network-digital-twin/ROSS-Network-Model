@@ -13,6 +13,7 @@
 #define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
 #define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
 #define PROBE_ID 1 // used for debugging the switch with the specific ID
+#define MIN_TIME_PRECISION 0.001 // in nano seconds
 
 //-------------Switch stuff-------------
 
@@ -307,6 +308,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
             /////// STATE CHANGE
 
             ts = token_bucket_next_available_time(shaper, next_pkt_size) - ts_now;
+            if(ts == 0) { // Fix calculation precision problem
+                ts += MIN_TIME_PRECISION;
+            }
             if(ts <= 0 ) {
                 printf("%f, %f\n", token_bucket_next_available_time(shaper, next_pkt_size), ts);
             }
@@ -414,11 +418,15 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     /* ------- DECIDE TO SEND a packet NOW OR IN THE FUTURE -------*/
     in_msg->port_id = out_port;  // save the out_port for reverse computation
 
+    // printf("1 last_update_time %f, now %f, current_tokens %d\n", shaper->last_update_time, ts_now, shaper->tokens);
+
     token_bucket_snapshot(shaper, &in_msg->qos_state_snapshot.shaper_state);
     token_bucket_consume(shaper, NULL, ts_now); ///////// STATE CHANGE
     int next_pkt_size = sp_has_next(scheduler); // the size of the next packet
     assert(next_pkt_size);
 
+    // printf("2 last-update-time %f, now: %f, current_tokens %d\n", shaper->last_update_time, ts_now, shaper->tokens);
+    // printf("2 next packet size: %d\n", next_pkt_size);
     // Check whether the shaper has enough token
     if (token_bucket_ready(shaper, next_pkt_size)) { // SEND OUT NOW
         bf->c0 = 1; // use the bit field to record the "if" branch
@@ -492,6 +500,9 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
 
     // SEND OUT LATER
     ts = token_bucket_next_available_time(shaper, next_pkt_size) - ts_now;
+    if(ts == 0) { // Fix calculation precision problem
+        ts += MIN_TIME_PRECISION;
+    }
     assert(ts >0);
 
     tw_event *e = tw_event_new(self,ts,lp);

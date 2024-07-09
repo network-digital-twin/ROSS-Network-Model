@@ -5,6 +5,8 @@ tw_peid *pe_to_num_lps;
 tw_lpid *lp_to_pe;
 tw_lpid *lp_to_lid;
 tw_lpid *local_gids;
+tw_lpid *switch_to_lp;
+tw_lpid *lp_to_switch;
 
 tw_lpid lpTypeMapper(tw_lpid gid)
 {
@@ -47,7 +49,7 @@ void custom_mapping_setup(void) {
 
     // figure out how many LPs are on this PE
     tw_lpid lps_per_pe = pe_to_num_lps[g_tw_mynode];
-    printf("Node %ld: g_tw_nlp %llu, g_tw_nkp %lu, lps_per_pe %llu\n", g_tw_mynode, g_tw_nlp, g_tw_nkp, lps_per_pe);
+    printf("Node %ld: g_tw_nlp %lu, g_tw_nkp %lu, lps_per_pe %lu\n", g_tw_mynode, g_tw_nlp, g_tw_nkp, lps_per_pe);
 
 
     // set up the LPs
@@ -122,7 +124,7 @@ void init_partition(char *filename, tw_lpid total_lps) {
         if (lp_to_pe[gid] == g_tw_mynode) { // If this LP belongs to this PE
             local_gids[index] = gid;
             if(index != lp_to_lid[gid]) {
-                printf("ERROR: index %llu, lp_to_lid[i] %llu, gid %llu\n", index, lp_to_lid[gid], gid);
+                printf("ERROR: index %lu, lp_to_lid[i] %lu, gid %lu\n", index, lp_to_lid[gid], gid);
             }
             assert(index == lp_to_lid[gid]);
             index++;
@@ -132,7 +134,76 @@ void init_partition(char *filename, tw_lpid total_lps) {
     fclose(fptr);
     printf("Loading partitions done on node %lu\n" , g_tw_mynode);
     for(int i = 0; i < num_local_lps; i++) {
-        printf("%llu ", local_gids[i]);
+        printf("%lu ", local_gids[i]);
     }
     printf("\n");
+}
+
+void init_switch_to_lp(char *filename) {
+    tw_lpid map_size = total_switches;
+    switch_to_lp = (tw_lpid *)malloc(map_size * sizeof(tw_lpid));
+    lp_to_switch = (tw_lpid *)malloc(map_size * sizeof(tw_lpid));
+    if(filename == NULL) {
+        // If no file is provided, then use the default mapping
+        for(tw_lpid i = 0; i < map_size; i++) {
+            switch_to_lp[i] = i;
+            lp_to_switch[i] = i;
+        }
+    } else {
+        if (g_tw_mynode == 0) {
+            printf("Loading switch-to-lp mapping from file: %s\n", filename);
+        }
+        FILE *fptr;
+        char *line = NULL;
+        size_t read;
+        size_t len = 0;
+        tw_lpid count = 0;
+
+        fptr = fopen(filename, "r");
+        if (fptr == NULL)
+        {
+            fprintf(stderr, "Error opening file: %s\n", filename);
+            exit(EXIT_FAILURE);
+        }
+
+        tw_lpid lpid = -1;
+        tw_lpid switch_id;
+        char *endptr;
+        while ((read = getline(&line, &len, fptr)) != -1)
+        {
+            lpid++;
+            if(line[read-1] == '\n') {
+                line[read-1] = '\0';
+            }
+            switch_id = strtol(line, &endptr, 10);
+            //printf("%d, %s\n",switch_id, );
+            if (*endptr != '\0') {
+                printf("Conversion failed: input string is not a valid integer. Unconverted characters: %s\n", endptr);
+                exit(EXIT_FAILURE);
+            }
+            if (map_size - 1 < switch_id) {
+                map_size = switch_id + 1;
+                switch_to_lp = (tw_lpid *) realloc(switch_to_lp, map_size * sizeof(tw_lpid));
+            }
+            // Set global variables:
+            switch_to_lp[switch_id] = lpid;
+            lp_to_switch[lpid] = switch_id;
+            count++;
+        }
+        if(count != total_switches) {
+            printf("ERROR: %lu switches specified, but the number of lines [%lu] does not match: %s\n", total_switches, count, filename);
+            exit(EXIT_FAILURE);
+        }
+        assert(count == total_switches);
+        fclose(fptr);
+    }
+
+}
+
+tw_lpid switch_id_to_lp_id(tw_lpid switch_id) {
+    return switch_to_lp[switch_id];
+}
+
+tw_lpid lp_id_to_switch_id(tw_lpid lpid) {
+    return lp_to_switch[lpid];
 }

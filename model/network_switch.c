@@ -12,17 +12,19 @@
 
 #define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
 #define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
-#define PROBE_ID 1 // used for debugging the switch with the specific ID
+#define PROBE_SWITCH_ID 1 // used for debugging the switch with the specific ID
+#define PROBE_PACKET_ID 1 // used for debugging the packet with the specific ID
 #define MIN_TIME_PRECISION 0.001 // in nano seconds
+#define DEBUG 1
 
 //-------------Switch stuff-------------
 
 void switch_init_config(switch_state *s, tw_lp *lp)
 {
     char *path = (char *) malloc(strlen(route_dir_path) + 50);
-    sprintf(path, "%s/%llu.yaml", route_dir_path, lp->gid);
-
-    s->conf = parseConfigFile(path, lp->gid);
+    sprintf(path, "%s/%lu.txt", route_dir_path, lp_id_to_switch_id(lp->gid));
+    //printf("Switch %lu: %lu\n", lp->gid, lp_id_to_switch_id(lp->gid));
+    s->conf = parseConfigFile(path);    
     free(path);
 
 }
@@ -35,7 +37,7 @@ void switch_init (switch_state *s, tw_lp *lp)
     switch_init_stats(s, lp);
 
     tw_lpid self = lp->gid;
-    int num_ports = s->conf->numPorts;
+    int num_ports = s->conf->num_ports;
 
     // init state data
     s->num_queues = num_qos_levels * num_ports;
@@ -47,21 +49,24 @@ void switch_init (switch_state *s, tw_lp *lp)
     s->propagation_delays = (double *)malloc(sizeof(double) * s->num_ports);
     s->ports_available_time = (double *)malloc(sizeof(double) * s->num_ports);
     for(int i = 0; i < s->num_ports; i++) {
-        s->bandwidths[i] = s->conf->ports[i].bandwidth / 1000.0 / 1000.0 / 1000.0;
+        s->bandwidths[i] = s->conf->ports[i].bw / 1000.0 / 1000.0 / 1000.0;
         s->propagation_delays[i] = propagation_delay;
         s->ports_available_time[i] = 0;
     }
 
     /* Init routing table */
     // TODO: tidy the code, now there are too much redundancy.
-    s->routing_table_size = total_switches; // number of records in the routing table
-    s->routing = s->conf->routing;
+    s->routing_table_size = s->conf->num_routes; // number of records in the routing table
+    s->routing = s->conf->routes;
 
 
     /* Init meters */
     s->meter_list = (srTCM *)malloc(sizeof(srTCM) * s->num_meters);
     params_srTCM params = {.CIR=-1, .CBS=srTCM_CBS, .EBS=srTCM_EBS, .is_color_aware=0};
     for(int i = 0; i < s->num_ports; i++) {
+        if(s->conf->ports[i].bw <= 0) {
+            continue;
+        }
         params.CIR = s->bandwidths[i] / s->num_qos_levels * 1000.0;
         for(int j = 0; j < s->num_qos_levels; j++) {
             srTCM_init(&(s->meter_list[i * s->num_qos_levels + j]), &params);
@@ -115,40 +120,49 @@ void switch_prerun (switch_state *s, tw_lp *lp)
 
 void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp)
 {
-
-
     tw_lpid self = lp->gid;
     tw_stime ts;
     tw_stime ts_now = tw_now(lp);
-    tw_lpid next_hop; // to be decided by the routing table
+    tw_lpid next_hop_lpid; // to be decided by the routing table
     int out_port; // to be decided by the routing table
     tw_lpid final_dest = in_msg->packet.dest;
     srTCM *meter = NULL;
 #ifdef DEBUG
-    if(self==0) {
-        printf("ARRIVE[%llu][%f]", lp->gid, tw_now(lp));
+    if(in_msg->packet.src == PROBE_SWITCH_ID && in_msg->packet.pid == PROBE_PACKET_ID) {
+        printf("ARRIVE[%lu][%d][%f]", lp->gid, s->conf->id, tw_now(lp));
         print_message(in_msg);
     }
 #endif
 
-
-    /* ------- ROUTING ------- */
-    // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
-    if(self == final_dest) //You are the final dest switch to deliver the packet
-    {
-        bf->c0 = 1;  // use the bit field to record the "if" branch
-
-        // Update statistics
-        switch_update_stats(s->stats, in_msg->packet.pid, ts_now - in_msg->packet.send_time, 0);
-        ///////////////////// STATE CHANGE
+    in_msg->packet.TTL--;
+    if(in_msg->packet.TTL <= 0) {
+        //discard 
+        // TODO: add to stats
+        bf->c7 = 1;
         return;
     }
 
-    s->stats->received++;
-
+    /* ------- ROUTING ------- */
+    // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
+    const port *port = get_port_for_next_hop(s->conf, in_msg->packet.destIP); 
+    if(port == NULL) { //You are the final dest switch to deliver the packet
+        bf->c0 = 1;  // use the bit field to record the "if" branch
+        // Update statistics
+        switch_update_stats(s->stats, in_msg->packet.pid, ts_now - in_msg->packet.send_time, 0);
+        ///////////////////// STATE CHANGE
+#ifdef DEBUG
+        if(in_msg->packet.src == PROBE_SWITCH_ID && in_msg->packet.pid == PROBE_PACKET_ID) {
+            printf("Final destination [%lu][%d][%f]", lp->gid, s->conf->id, tw_now(lp));
+            print_message(in_msg);
+        }
+#endif
+        return;
+    } 
     // Else, you need to route it to another switch
-    out_port = s->routing[final_dest].port_id;
-    next_hop = s->routing[final_dest].nextHop;
+    s->stats->received++;
+    
+    next_hop_lpid = switch_id_to_lp_id(port->destNode);
+    out_port = port->id;
 
 
     /* ------- CLASSIFIER ------- */
@@ -162,17 +176,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     meter = &s->meter_list[meter_index];
     srTCM_state *meter_state = &in_msg->qos_state_snapshot.meter_state;
     srTCM_snapshot(meter, meter_state);
-//    if (self == PROBE_ID) {
-//        srTCM *tmp_meter = &s->meter_list[out_port * s->num_qos_levels];
-//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-//        tmp_meter++;
-//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-//        tmp_meter++;
-//        printf("Tc %u, Te %u\t",tmp_meter->T_c, tmp_meter->T_e);
-//        printf("port %d\t", out_port);
-//        printf("%f", ts_now);
-//
-//    }
+
     // Update
     int color = srTCM_update(meter, in_msg, ts_now);
     ///////////////////// STATE CHANGE
@@ -185,40 +189,20 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     if(color == COLOR_RED) {
         drop = 1;
-//        if(self == PROBE_ID) {
-//            printf("red drop\n");
-//        }
-//        printf("[drop] COLOR_RED, switchID: %llu\n", lp->gid);
     } else if(queue->size_in_bytes + in_msg->packet.size_in_bytes > queue->max_size_in_bytes) {
         drop = 1;
-//        if(self == PROBE_ID) {
-//            printf("queue full drop\n");
-//        }
-//        printf("[drop] queue full, switchID: %llu\n", lp->gid);
     } else if(color == COLOR_YELLOW) {
         bf->c5 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2];
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state);  // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2 + 1].q_time;  // Green dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
-//        if(drop && self == PROBE_ID) {
-//            printf("yellow drop\n");
-//        }
-//        if(drop) {
-//            printf("[drop] COLOR_YELLOW, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
-//        }
     } else if(color == COLOR_GREEN) {
         bf->c6 = 1; // use the bit field to record the "if" branch
         REDdropper *dropper = &s->dropper_list[meter_index * 2 + 1];
         REDdropper_snapshot(dropper, &in_msg->qos_state_snapshot.dropper_state); // FOR REVERSE COMPUTATION
         in_msg->qos_state_snapshot.dropper_q_time = s->dropper_list[meter_index * 2].q_time;  // Yellow dropper q_time, FOR REVERSE COMPUTATION
         drop = REDdropper_update(dropper, ts_now);         ///////////////////// STATE CHANGE
-//        if(drop && self == PROBE_ID) {
-//            printf("green drop\n");
-//        }
-//        if(drop) {
-//            printf("[drop] COLOR_GREEN, switchID: %llu, avg %f, qlen %d\n", lp->gid, dropper->avg, dropper->queue->num_packets);
-//        }
     } else {
         printf("ERROR: Unknown color\n");
         exit(-1);
@@ -233,7 +217,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // enqueue the node and modify the routing info of the enqueued node
         ///////////////////// STATE CHANGE
         node_t *enqueued_node = queue_put(queue, in_msg);
-        enqueued_node->data.next_hop = next_hop;
+        enqueued_node->data.next_hop = next_hop_lpid;
     }
 
     /* ------- DECIDE TO SEND a packet NOW OR IN THE FUTURE -------*/
@@ -268,7 +252,7 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         assert(ts >0);
 
         // Send the packet to the destination switch
-        tw_event *e = tw_event_new(next_hop, ts, lp);
+        tw_event *e = tw_event_new(pkt->next_hop, ts, lp);
         tw_message *out_msg = tw_event_data(e);
         out_msg->packet = *pkt;
         out_msg->packet.prev_hop = self;
@@ -278,6 +262,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         tw_event_send(e);
 
         free(node);
+
+#ifdef DEBUG
+        if(out_msg->packet.src == PROBE_SWITCH_ID && out_msg->packet.pid == PROBE_PACKET_ID) {
+            printf("schedule new ARRIVE event: from_lpid %lu, next_hop_lpid %lu\n", self, pkt->next_hop);
+        }
+#endif
 
         // If the queue is empty, then update droppers' q_time
         if(scheduler->queue_list[scheduler->last_priority].num_packets == 0) {
@@ -295,8 +285,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         // Update port available time
         s->ports_available_time[out_port] = MAX(ts_now, port_av_time) + injection_delay;  /////// STATE CHANGE
 #ifdef DEBUG
-        if(self==0) {
-            printf("Send out now.\n");
+        if(out_msg->packet.src == PROBE_SWITCH_ID && out_msg->packet.pid == PROBE_PACKET_ID) {
+            printf("Send out now [%lu][%d][%f] ", lp->gid, s->conf->id, tw_now(lp));
+            print_message(out_msg);
         }
 #endif
     } else { // SEND OUT LATER
@@ -323,8 +314,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
             tw_event_send(e);
 #ifdef DEBUG
 
-            if(self==0) {
-            printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
+            if(out_msg->packet.src == PROBE_SWITCH_ID && out_msg->packet.pid == PROBE_PACKET_ID) {
+                printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
                    scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
                    scheduler->queue_list[2].num_packets);
         }
@@ -336,6 +327,12 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
 void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp) {
 
+    in_msg->packet.TTL++;
+    
+    // TTL reaches 0
+    if (bf->c7) {
+        return;
+    }
     // Final hop
     if (bf->c0) {
         switch_update_stats_reverse(s->stats, 0);
@@ -408,8 +405,8 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     token_bucket *shaper = &s->shaper_list[out_port];
 #ifdef DEBUG
 
-    if(self==0) {
-        printf("SEND[%llu][%f]\n", self, tw_now(lp));
+    if(in_msg->packet.src == PROBE_SWITCH_ID && in_msg->packet.pid == PROBE_PACKET_ID) {
+        printf("SEND[%lu][%f]\n", self, tw_now(lp));
         printf("-----Handle Send. queue size: %d, %d, %d.\n", scheduler->queue_list[0].num_packets,
                scheduler->queue_list[1].num_packets, scheduler->queue_list[2].num_packets);
     }
@@ -481,9 +478,9 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
         s->ports_available_time[out_port] = MAX(ts_now, port_av_time) + injection_delay;  /////// STATE CHANGE
         // Update statistics
 #ifdef DEBUG
-        if(self==0) {
-        printf("-----Send now. ");
-        print_message(out_msg);
+        if(out_msg->packet.src == PROBE_SWITCH_ID && out_msg->packet.pid == PROBE_PACKET_ID) {
+            printf("-----Send now. ");
+            print_message(out_msg);
     }
 #endif
 
@@ -511,7 +508,7 @@ void handle_send_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *lp
     out_msg->port_id = out_port;
     tw_event_send(e);
 #ifdef DEBUG
-        if(self==0) {
+        if(out_msg->packet.src == PROBE_SWITCH_ID && out_msg->packet.pid == PROBE_PACKET_ID) {
             printf("-----Schedule to SEND at: now+%f. queue size: %d, %d, %d.\n", ts,
                    scheduler->queue_list[0].num_packets, scheduler->queue_list[1].num_packets,
                    scheduler->queue_list[2].num_packets);
@@ -620,7 +617,7 @@ void switch_final(switch_state *s, tw_lp *lp)
 //    }
 //    free(s->qos_queue_list);
     //if(s->stats->num_packets_dropped > 0) {
-        printf("%s Switch %llu:\t final_dest:%llu, R: %llu, S: %llu, D: %llu, events: %llu\n",
+        printf("%s Switch %lu:\t final_dest:%llu, R: %llu, S: %llu, D: %llu, events: %llu\n",
                s->conf->type, 
                self, 
                s->stats->num_packets_recvd,

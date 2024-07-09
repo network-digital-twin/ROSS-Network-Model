@@ -8,3 +8,4 @@ WL_generation/traces/*
 experiments/*
 output/*
 build/*
+data

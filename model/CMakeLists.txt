@@ -20,15 +20,15 @@ SET(network_srcs
 		network_map.c
 		network.h
 		model_config.h
-		network_terminal.c
 		qos/queue_fifo.c
 		qos/meter.c
 		qos/shaper.c
 		qos/scheduler/strict_priority.c
+		util/ip.c
 		util/message.c
 		util/conversion.c
 		util/workload_parser.c
-		util/config_parser.c
+		util/parse_new_config.c
 		util/stats.c
 		qos/REDdropper.c
 		traffic/traffic_generation.c

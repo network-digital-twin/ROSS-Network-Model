@@ -9,14 +9,14 @@ tw_lptype model_lps[] =
 {
 
         {
-            (init_f) terminal_init,
-            (pre_run_f) terminal_prerun,
+            (init_f) NULL,
+            (pre_run_f) NULL,
             (event_f) NULL,
             (revent_f) NULL,
             (commit_f) NULL,
-            (final_f) terminal_final,
-            (map_f) custom_mapping_lp_to_pe,
-            sizeof(terminal_state)
+            (final_f) NULL,
+            (map_f) NULL,
+            0
         },
         {
             (init_f) switch_init,
@@ -35,12 +35,13 @@ tw_lptype model_lps[] =
 //Define command line arguments default values
 
 tw_lpid total_terminals= 0;
-tw_lpid total_switches = 5237;
+tw_lpid total_switches = 5614;
 
 char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
 char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/star256/star256.txt.part.1";
 char trace_file[1024] = "";
-char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/WL_generation/topologies/final_topology_0";
+char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/george_ZTE_data";
+char switch_to_lp_file[512] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/nodes_in_big_subgraph(undirected).txt";
 
 char *trace_path = trace_file;
 char *route_dir_path = route_path;
@@ -86,10 +87,10 @@ void displayModelSettings()
         printf("\n");
         printf("Network Model Configuration:\n");
         printf("\t nnodes: %i\n", tw_nnodes());
-        printf("\t g_tw_nlp: %llu\n", g_tw_nlp);
+        printf("\t g_tw_nlp: %lu\n", g_tw_nlp);
         printf("\t custom_LPs_per_pe: %i\n\n", num_LPs_per_pe);
-        printf("\t total_terminals: %llu\n", total_terminals);
-        printf("\t total_switches: %llu\n\n", total_switches);
+        printf("\t total_terminals: %lu\n", total_terminals);
+        printf("\t total_switches: %lu\n\n", total_switches);
 
         for (int i = 0; i < 30; i++)
         {
@@ -162,7 +163,7 @@ int network_main(int argc, char** argv, char **env)
     } else {
         g_tw_events_per_pe = 1000000;
     }
-    printf("%llu\n",g_tw_events_per_pe);
+    printf("%u\n",g_tw_events_per_pe);
     
 
     //Useful ROSS variables and functions
@@ -192,9 +193,7 @@ int network_main(int argc, char** argv, char **env)
     // g_tw_nkp
     // g_tw_synchronization_protocol
 
-
-
-
+    init_switch_to_lp(switch_to_lp_file);
 
     g_tw_lookahead = 1;
 

@@ -1,8 +1,8 @@
 //
 // Created by George.
 //
-#ifndef NETWORK_MODEL_PARSER_H
-#define NETWORK_MODEL_PARSER_H
+#ifndef NETWORK_MODEL_PARSER_OLD_H
+#define NETWORK_MODEL_PARSER_OLD_H
 
 #include "ross.h"
 // switch configuration structs

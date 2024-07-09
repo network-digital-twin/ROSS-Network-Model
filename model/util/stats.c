@@ -89,7 +89,7 @@ void write_switch_stats_to_file(const switch_state *s, tw_lp *lp) {// Write the 
     char filename[25];
     char str_header[150];
     char str_script[150];
-    sprintf(filename, "%llu.csv", lp->gid);
+    sprintf(filename, "%lu.csv", lp->gid);
     strcpy(str, out_dir);
     strcat(str, "/raw/");
     strcat(str, filename);

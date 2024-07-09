@@ -56,7 +56,7 @@ void kickoff(switch_state * s, tw_lp * lp) {
         printf("switchID %d, lpid %lu, destNet %s, mask %d, random dest %s\n", s->conf->id, lp->gid, destNetIP, mask, s->dest_ip);
         
         const port *port = get_port_for_next_hop(s->conf, s->dest_ip); 
-        mean_wait_time = PACKET_SIZE * 8 / (port->bw / 1000.0 / 1000.0 / 1000.0); // bps
+        mean_wait_time = s->traffic_gen_load * PACKET_SIZE * 8 / (port->bw / 1000.0 / 1000.0 / 1000.0); // bps
         printf("port->bw %lu, mean_wait_time %d\n",port->bw, mean_wait_time);
 
         tw_stime ts = tw_rand_exponential(lp->rng, mean_wait_time) + 1;

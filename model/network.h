@@ -332,6 +332,7 @@ extern int queue_capacity_2; // in bytes
 extern uint32_t srTCM_CBS;
 extern uint32_t srTCM_EBS;
 
+extern double traffic_gen_load; // the load of the generated traffic, percentage of the output port bandwidth
 extern tw_stime propagation_delay; // in nanosecond: switch-to-switch propagation delay
 extern char *partition_file;
 extern tw_peid *pe_to_num_lps;

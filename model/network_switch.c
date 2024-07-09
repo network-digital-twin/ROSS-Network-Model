@@ -33,6 +33,7 @@ void switch_init (switch_state *s, tw_lp *lp)
 {
     switch_init_config(s, lp);
     s->num_qos_levels = NUM_QOS_LEVEL;  // TODO: load dynamically from file
+    s->traffic_gen_load = traffic_gen_load;
     const int num_qos_levels = s->num_qos_levels;
     switch_init_stats(s, lp);
 

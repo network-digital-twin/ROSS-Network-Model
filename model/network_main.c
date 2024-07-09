@@ -57,7 +57,7 @@ uint32_t srTCM_CBS = 1400*50*8;
 uint32_t srTCM_EBS = 1400*500*8;
 
 tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
-
+double traffic_gen_load = 0.8; // 80% load of traffic for each output port bandwidth
 
 //Command line opts
 const tw_optdef model_opts[] = {
@@ -71,6 +71,7 @@ const tw_optdef model_opts[] = {
         TWOPT_UINT("queue-capacity-0", queue_capacity_0, "Queue capacity (bytes) for priority 0"),
         TWOPT_UINT("queue-capacity-1", queue_capacity_1, "Queue capacity (bytes) for priority 1"),
         TWOPT_UINT("queue-capacity-2", queue_capacity_2, "Queue capacity (bytes) for priority 2"),
+        TWOPT_STIME("traffic-gen-load", traffic_gen_load, "Traffic generation load"),
 	TWOPT_END()
 };
 
@@ -198,6 +199,8 @@ int network_main(int argc, char** argv, char **env)
     g_tw_lookahead = 1;
 
     displayModelSettings();
+
+    assert(traffic_gen_load >= 0 && traffic_gen_load <= 1);
 
     //set up LPs within ROSS
     tw_define_lps(num_LPs_per_pe, sizeof(tw_message));

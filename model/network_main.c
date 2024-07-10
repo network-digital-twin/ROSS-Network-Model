@@ -40,8 +40,8 @@ tw_lpid total_switches = 5614;
 char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
 char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/star256/star256.txt.part.1";
 char trace_file[1024] = "";
-char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/george_ZTE_data";
-char switch_to_lp_file[512] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/nodes_in_big_subgraph(undirected).txt";
+char route_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/switches_data";
+char switch_to_lp_file[512] = "/home/nan42/codes-dev/ROSS-Network-Model/data/zte_parsed_data_06242024/lp_to_switch_mapping.txt";
 
 char *trace_path = trace_file;
 char *route_dir_path = route_path;

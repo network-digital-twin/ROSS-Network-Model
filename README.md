@@ -98,3 +98,19 @@ Specifically, the correspondence between the scripts and the result folders is a
 <img src="figures/scale-weights-3-3.5.jpg" height="180"/>
 <img src="figures/scale-estimate-3-3.5.jpg" height="180"/>
 </div>
+
+
+
+## Files required
+
+- Individual info (ports, routes, topos) of each switch
+- All edges of the graph
+- LPID to switchID mapping
+- Graph topology (LP ID) for METIS
+- -> partitioning file 
+
+## Issues
+
+When the switch is the final destination of a packet just received, 
+in the current implementation, the switch will not send out new packets.
+This should be optimised in the future.

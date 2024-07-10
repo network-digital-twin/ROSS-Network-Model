@@ -145,8 +145,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- ROUTING ------- */
     // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
-    const port *port = get_port_for_next_hop(s->conf, in_msg->packet.destIP); 
-    if(port == NULL) { //You are the final dest switch to deliver the packet
+    port *port = NULL;
+    int ret = get_port_for_next_hop(s->conf, in_msg->packet.destIP, port); 
+    if(ret == 0 && port == NULL) { //You are the final dest switch to deliver the packet
         bf->c0 = 1;  // use the bit field to record the "if" branch
         // Update statistics
         switch_update_stats(s->stats, in_msg->packet.pid, ts_now - in_msg->packet.send_time, 0);
@@ -158,7 +159,15 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
         }
 #endif
         return;
-    } 
+    } else if (ret == 1) {
+        assert(port != NULL);
+    } else if (ret < 0) {
+        printf("INFO: Packet drop -- no matching route found in lp %lu switch %d", self, s->conf->id);
+        return;
+    } else {
+        printf("ERROR: unexpected behaviour of get_port_for_next_hop()\n");
+        exit(-1);
+    }
     // Else, you need to route it to another switch
     s->stats->received++;
     

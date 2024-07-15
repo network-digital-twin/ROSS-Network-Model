@@ -145,8 +145,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
 
     /* ------- ROUTING ------- */
     // Determine: Are you the switch that is to deliver the message or do you need to route it to another one
-    port *port = NULL;
-    int ret = get_port_for_next_hop(s->conf, in_msg->packet.destIP, port); 
+    int ret = 10;  // default set to be an invalid value
+    const port *port = get_port_for_next_hop(s->conf, in_msg->packet.destIP, &ret); 
     if(ret == 0 && port == NULL) { //You are the final dest switch to deliver the packet
         bf->c0 = 1;  // use the bit field to record the "if" branch
         // Update statistics

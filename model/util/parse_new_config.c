@@ -223,17 +223,18 @@ const route *get_next_hop(const char *dest_ip, const route *routes, int num_rout
     return (const route *) &routes[matched_routes_idx[0]];
 }
 
-// Assign port to the specifc output port
-// Return: 0 if this is the final destination;
+// Return the specifc output port, NULL if it is myself or not found.
+// Assign a return code to ``ret'': 
+//         0 if this is the final destination;
 //         1 if the next_hop exist;
 //         -1 if there is no matching route in the routing table;
 //         -2 if there is a matching route, but the next_hop port is not connected to any other switch
-int get_port_for_next_hop(config *conf, const char *dest_ip, port *port) {
+const port *get_port_for_next_hop(config *conf, const char *dest_ip, int *ret) {
     // First check if this is the final destination, by matching `dest_ip' with the IP of each port
     for(int i = 0; i <= conf->num_ports; i++) {
         if (strcmp(conf->ports[i].ip, dest_ip) == 0) {
-            port = NULL;
-            return 0;
+            *ret = 0;
+            return NULL;
         }
     }
 
@@ -242,17 +243,17 @@ int get_port_for_next_hop(config *conf, const char *dest_ip, port *port) {
     if (next_hop == NULL) {
         // printConf(conf);
         printf("ERROR: Next hop not found for ip %s in switch %d\n", dest_ip, conf->id);
-        port = NULL;
-        return -1;
+        *ret = -1;
+        return NULL;
     }
     if (next_hop->srcPortPtr->destNode < 0) {
         // printConf(conf);
         printf("ERROR: Next hop port %s in switch %d is not connected to any other switch\n", next_hop->srcPortPtr->name, conf->id);
-        port = NULL;
-        return -2;
+        *ret = -2;
+        return NULL;
     }
-    port = next_hop->srcPortPtr;
-    return 3;
+    *ret = 1;
+    return next_hop->srcPortPtr;
 }
 
 

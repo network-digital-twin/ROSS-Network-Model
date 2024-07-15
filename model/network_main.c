@@ -35,7 +35,7 @@ tw_lptype model_lps[] =
 //Define command line arguments default values
 
 tw_lpid total_terminals= 0;
-tw_lpid total_switches = 5614;
+tw_lpid total_switches = 5097;
 
 char home_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model";
 char partition_path[1024] = "/home/nan42/codes-dev/ROSS-Network-Model/partition/star256/star256.txt.part.1";

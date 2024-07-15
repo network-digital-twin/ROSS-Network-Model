@@ -24,10 +24,13 @@ void kickoff(switch_state * s, tw_lp * lp) {
         // Randomly pick a route that has the same srcPort as the selected srcPort, then use that final destination
         char *destNetIP = NULL;
         int mask = 0;
+        int ret = 10;
         for(int i=0; i<500; i++) {
             int route_id = tw_rand_integer(lp->rng, 0, s->conf->num_routes - 1);
             if(strcmp(srcPortName_ptr, s->conf->routes[route_id].srcPort) == 0) {
-                if(s->conf->routes[route_id].nextHopID != s->conf->id && get_port_for_next_hop(s->conf, s->conf->routes[route_id].netIP)) { // make sure the next hop is not the current switch
+                ret = 10;
+                get_port_for_next_hop(s->conf, s->conf->routes[route_id].netIP, &ret);
+                if(s->conf->routes[route_id].nextHopID != s->conf->id && 1 == ret) { // make sure the next hop is not the current switch
                     destNetIP = s->conf->routes[route_id].netIP;
                     mask = s->conf->routes[route_id].mask;
                     break;
@@ -43,9 +46,12 @@ void kickoff(switch_state * s, tw_lp * lp) {
         char *dest_ip = NULL;
         for(int i = 0; i < 5; i++) {
             dest_ip = generate_random_ip(lp->rng, destNetIP, mask);
-            if(get_port_for_next_hop(s->conf, dest_ip)) {
+            ret = 10;
+            get_port_for_next_hop(s->conf, dest_ip, &ret);
+            if(1 == ret) {
                 break;
             }
+            dest_ip = NULL;
         }
         if(dest_ip == NULL) {
             printf("WARNING: No destination IP found for switch to generate traffic: lp %lu - switch %d\n", self, s->conf->id);
@@ -55,7 +61,7 @@ void kickoff(switch_state * s, tw_lp * lp) {
         s->dest_ip = dest_ip;
         printf("switchID %d, lpid %lu, destNet %s, mask %d, random dest %s\n", s->conf->id, lp->gid, destNetIP, mask, s->dest_ip);
         
-        const port *port = get_port_for_next_hop(s->conf, s->dest_ip); 
+        const port *port = get_port_for_next_hop(s->conf, s->dest_ip, &ret); 
         mean_wait_time = s->traffic_gen_load * PACKET_SIZE * 8 / (port->bw / 1000.0 / 1000.0 / 1000.0); // bps
         printf("port->bw %lu, mean_wait_time %d\n",port->bw, mean_wait_time);
 

@@ -49,6 +49,6 @@ void parseTopo(config* conf, const char delimiter[]);
 void printConf(config* conf);
 
 const route *get_next_hop(const char *dest_ip, const route *routes, int num_routes);
-int get_port_for_next_hop(config *conf, const char *dest_ip, port *port);
+const port *get_port_for_next_hop(config *conf, const char *dest_ip, int *ret);
 
 #endif

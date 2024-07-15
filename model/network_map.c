@@ -105,6 +105,10 @@ void init_partition(char *filename, tw_lpid total_lps) {
         lp_to_lid[lpid]=pe_to_num_lps[peid];
         pe_to_num_lps[peid]++;
     }
+    if(lpid + 1 + total_terminals != total_lps) {
+        printf("ERROR: total_lps %lu, pid %lu, total_terminals %lu\n", total_lps, lpid, total_terminals);
+        exit(EXIT_FAILURE);
+    }
     assert(lpid + 1 + total_terminals == total_lps);
     assert(total_terminals <= 1); // Now this function only works for one ``abstract'' terminal
 

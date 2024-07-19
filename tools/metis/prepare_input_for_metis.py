@@ -1,9 +1,9 @@
 import json
 
-LP_switch_mapping_file = 'lp_to_switch_mapping.txt'
-graph_edge_file = 'edges.json'
+LP_switch_mapping_file = '../../data/zte_parsed_data_06242024/lp_to_switch_mapping.txt'
+graph_edge_file = '../../data/zte_parsed_data_06242024/edges.json'
 weights_file = None
-output_file = 'metis/graph_metis.txt'
+output_file = '../../data/zte_parsed_data_06242024/metis/graph_metis-node-weights.txt'
 
 def get_lp_of_switch(switch_id, switch_to_lp_map):
     if is_switch_in_map(switch_id, switch_to_lp_map) == False:

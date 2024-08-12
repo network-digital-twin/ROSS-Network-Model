@@ -56,8 +56,8 @@ int queue_capacity_2 = 20000000; // 20MB: ~14285 packets
 uint32_t srTCM_CBS = 1400*50*8;
 uint32_t srTCM_EBS = 1400*500*8;
 
-tw_stime propagation_delay = 4000000; // 4000000ns = 4ms
-double traffic_gen_load = 0.8; // 80% load of traffic for each output port bandwidth
+tw_stime propagation_delay = 4000; // 4000ns = 4us
+double traffic_gen_load = 0.1; // 10% load of traffic for each output port bandwidth
 
 //Command line opts
 const tw_optdef model_opts[] = {

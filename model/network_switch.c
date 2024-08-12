@@ -9,13 +9,13 @@
 #include "network.h"
 #include <string.h>
 #include <assert.h>
+#include "util/debug.h"
 
 #define YELLOW_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.6)
 #define GREEN_DROPPER_MAXTH(queue_size_bytes) floor(((queue_size_bytes) / 1400.0) * 0.9)
 #define PROBE_SWITCH_ID 1 // used for debugging the switch with the specific ID
 #define PROBE_PACKET_ID 1 // used for debugging the packet with the specific ID
 #define MIN_TIME_PRECISION 0.001 // in nano seconds
-#define DEBUG 1
 
 //-------------Switch stuff-------------
 
@@ -138,8 +138,8 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     in_msg->packet.TTL--;
     if(in_msg->packet.TTL <= 0) {
         //discard 
-        // TODO: add to stats
         bf->c7 = 1;
+        s->stats->num_packets_dropped_TTL++;
         return;
     }
 
@@ -162,7 +162,9 @@ void handle_arrive_event(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_lp *
     } else if (ret == 1) {
         assert(port != NULL);
     } else if (ret < 0) {
-        printf("INFO: Packet drop -- no matching route found in lp %lu switch %d", self, s->conf->id);
+        bf->c8 = 1;
+        //printf("INFO: Packet drop -- no matching route found in lp %lu switch %d", self, s->conf->id);
+        s->stats->num_packets_dropped_route++;
         return;
     } else {
         printf("ERROR: unexpected behaviour of get_port_for_next_hop()\n");
@@ -341,11 +343,16 @@ void handle_arrive_event_rc(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_l
     
     // TTL reaches 0
     if (bf->c7) {
+        s->stats->num_packets_dropped_TTL--;
         return;
     }
     // Final hop
     if (bf->c0) {
         switch_update_stats_reverse(s->stats, 0);
+        return;
+    }
+    if (bf->c8) {
+        s->stats->num_packets_dropped_route--;
         return;
     }
     s->stats->received--;
@@ -618,6 +625,22 @@ void switch_RC_event_handler(switch_state *s, tw_bf *bf, tw_message *in_msg, tw_
 
 }
 
+// MPI_stats prepare_stats(switch_state *s, tw_lpid lpid) {
+//     stats *stats = s->stats;
+//     MPI_stats mpi_stats;
+//     mpi_stats.lp_id = lpid;
+//     strncpy(mpi_stats.switch_type, s->conf->type, sizeof(mpi_stats.switch_type));
+//     mpi_stats.num_packets_dropped = stats->num_packets_dropped;
+//     mpi_stats.num_packets_dropped_TTL = stats->num_packets_dropped_TTL;
+//     mpi_stats.num_packets_dropped_route = stats->num_packets_dropped_route;
+//     mpi_stats.num_packets_sent = stats->num_packets_sent;
+//     mpi_stats.num_packets_recvd = stats->num_packets_recvd;
+//     mpi_stats.received = stats->received;
+//     mpi_stats.events = stats->events;
+//     mpi_stats.records_capacity = stats->records_capacity;
+//     return mpi_stats;
+// }
+
 void switch_final(switch_state *s, tw_lp *lp)
 {
      tw_lpid self = lp->gid;
@@ -627,17 +650,19 @@ void switch_final(switch_state *s, tw_lp *lp)
 //    }
 //    free(s->qos_queue_list);
     //if(s->stats->num_packets_dropped > 0) {
-        printf("%s Switch %lu:\t final_dest:%llu, R: %llu, S: %llu, D: %llu, events: %llu\n",
-               s->conf->type, 
-               self, 
-               s->stats->num_packets_recvd,
-               s->stats->received,
-               s->stats->num_packets_sent,
-               s->stats->num_packets_dropped,
-               s->stats->events
-               );
 
-    //}
+    //     printf("%s Switch %lu:\t final_dest:%llu, R: %llu, S: %llu, D_qos: %llu, D_TTL: %llu, D_route: %llu events: %llu\n",
+    //            s->conf->type, 
+    //            self, 
+    //            s->stats->num_packets_recvd,
+    //            s->stats->received,
+    //            s->stats->num_packets_sent,
+    //            s->stats->num_packets_dropped,
+    //            s->stats->num_packets_dropped_TTL,
+    //            s->stats->num_packets_dropped_route,
+    //            s->stats->events
+    //            );
+
 
     print_switch_stats(s, lp);
 #ifdef TRACE

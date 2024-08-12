@@ -9,6 +9,8 @@ void switch_init_stats(switch_state *s, tw_lp *lp) {
     s->stats = (stats *)malloc(sizeof(stats));
     s->stats->num_packets_recvd = 0;
     s->stats->num_packets_dropped = 0;
+    s->stats->num_packets_dropped_TTL = 0;
+    s->stats->num_packets_dropped_route = 0;
     s->stats->num_packets_sent = 0;
     s->stats->received = 0;
     s->stats->records_capacity = MAX_RECORDS;

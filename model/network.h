@@ -224,6 +224,8 @@ typedef struct {
 
 typedef struct {
     unsigned long long num_packets_dropped;  // the packet dropped in this switch
+    unsigned long long num_packets_dropped_TTL;  
+    unsigned long long num_packets_dropped_route; // the packet dropped due to routing table
     unsigned long long num_packets_sent;  // the packet sent from this switch
     unsigned long long received; // the packet received by this switch whose final dest is not this switch
     unsigned long long num_packets_recvd; // the packet whose final dest is this switch
@@ -235,6 +237,19 @@ typedef struct {
 //    double **jitter;  // [src switch][priority]
 //    int **count;  // number of received packets [src switch][priority]
 } stats;  // stats of the switch
+
+// typedef struct {
+//     uint64_t lp_id; 
+//     char switch_type[10];
+//     unsigned long long num_packets_dropped;  // the packet dropped in this switch
+//     unsigned long long num_packets_dropped_TTL;  
+//     unsigned long long num_packets_dropped_route; // the packet dropped due to routing table
+//     unsigned long long num_packets_sent;  // the packet sent from this switch
+//     unsigned long long received; // the packet received by this switch whose final dest is not this switch
+//     unsigned long long num_packets_recvd; // the packet whose final dest is this switch
+//     unsigned long long records_capacity; // the max number of record the `records` can contain.
+//     unsigned long long events;
+// } MPI_stats; // used for MPI communication at the end of the simulation
 
 typedef struct {
     int num_qos_levels;

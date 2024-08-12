@@ -28,7 +28,8 @@ void test2() {
     const port *port = get_port_for_next_hop(conf, "8.25.223.84");
     assert(port != NULL);
     assert(strcmp(port->name, "smartgroup2") == 0);
-    assert(get_port_for_next_hop(conf, "8.25.246.165") == NULL);
+    int ret = 10;
+    assert(get_port_for_next_hop(conf, "8.25.246.165", &ret) == NULL);
 }
 
 void test3() {

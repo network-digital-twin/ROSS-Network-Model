@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-
+#include "debug.h"
 
 config *parseConfigFile(char *path)
 {
@@ -242,13 +242,17 @@ const port *get_port_for_next_hop(config *conf, const char *dest_ip, int *ret) {
     const route *next_hop = get_next_hop(dest_ip, conf->routes, conf->num_routes);
     if (next_hop == NULL) {
         // printConf(conf);
-        printf("ERROR: Next hop not found for ip %s in switch %d\n", dest_ip, conf->id);
+        if(DEBUG) {
+            printf("ERROR: Next hop not found for ip %s in switch %d\n", dest_ip, conf->id);
+        }
         *ret = -1;
         return NULL;
     }
     if (next_hop->srcPortPtr->destNode < 0) {
         // printConf(conf);
-        printf("ERROR: Next hop port %s in switch %d is not connected to any other switch\n", next_hop->srcPortPtr->name, conf->id);
+        if(DEBUG) {
+            printf("ERROR: Next hop port %s in switch %d is not connected to any other switch\n", next_hop->srcPortPtr->name, conf->id);
+        }
         *ret = -2;
         return NULL;
     }
